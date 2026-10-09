@@ -1,0 +1,109 @@
+name: Update Filters
+
+on:
+  schedule:
+    - cron: "0 3 */2 * *"   # every 2 days at 03:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # -------------------------------
+      # Checkout main branch
+      # -------------------------------
+      - name: Checkout main branch
+        uses: actions/checkout@v2
+        with:
+          repository: 'uazo/cromite'
+          path: main
+          fetch-depth: 1
+
+      # -------------------------------
+      # Checkout pages branch
+      # -------------------------------
+      - name: Checkout pages branch
+        uses: actions/checkout@v2
+        with:
+          repository: 'uazo/cromite'
+          ref: pages
+          path: pages
+          fetch-depth: 1
+          token: ${{ secrets.PAGE_PUBLISH }}
+
+      # -------------------------------
+      # Prepare output directory
+      # -------------------------------
+      - name: Prepare output directory
+        run: mkdir -p main/out/filters
+
+      # -------------------------------
+      # Download filter lists (fail-safe, detailed errors)
+      # -------------------------------
+      - name: Download filter lists
+        run: |
+          set -e
+          FAILED=()
+
+          while IFS= read -r line || [[ -n "$line" ]]; do
+            # Trim leading and trailing whitespace
+            line="${line#"${line%%[![:space:]]*}"}"
+            line="${line%"${line##*[![:space:]]}"}"
+
+            # Skip empty lines or lines starting with #
+            [[ -z "$line" || "${line:0:1}" == "#" ]] && continue
+
+            url=$(echo "$line" | cut -d '=' -f1 | xargs)
+            file=$(echo "$line" | cut -d '=' -f2 | xargs)
+
+            if [ -z "$file" ]; then
+              file=$(basename "$url")
+            fi
+
+            echo "Downloading $url -> $file"
+
+            if ! curl -fsSL "$url" -o "main/out/filters/$file"; then
+              echo "FAILED: $url"
+              FAILED+=("$file")
+            fi
+          done < main/tools/images/update-cromite-org/filters-sources.txt
+
+          if [ ${#FAILED[@]} -ne 0 ]; then
+            echo "One or more downloads failed. Aborting deploy."
+            echo "Failed files:"
+            for f in "${FAILED[@]}"; do
+              echo "- $f"
+            done
+            exit 1
+          fi
+
+      # -------------------------------
+      # Deploy filters (only .txt)
+      # -------------------------------
+      - name: Deploy to pages
+        run: |
+          cd pages
+
+          rm -rf filters
+          mkdir -p filters
+
+          cp -r ../main/out/filters/. filters/
+
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+
+          # add ONLY .txt files
+          find filters -type f -name "*.txt" -exec git add {} +
+
+          if git diff --cached --quiet; then
+            echo "No changes detected"
+            exit 0
+          fi
+
+          git commit -m "Update filters ($(date -u))"
+
+          git push https://x-access-token:${{ secrets.PAGE_PUBLISH }}@github.com/uazo/cromite.git HEAD:pages
