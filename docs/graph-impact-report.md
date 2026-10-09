@@ -42,6 +42,19 @@ feature flags or deployment state.
 
 ## Refresh evidence and limitations
 
+The subsequent login/branding review refreshed the browser code/component and
+workspace graphs: 390 browser nodes, 13,002 workspace nodes, 28,695 workspace
+edges, zero aggregate dangling endpoints. The browser component drops 113
+external/library AST endpoints. Repeated queries were
+`setupMobileAuthRoutes refresh token PKCE Playwright continue override browser warning`
+(303 nodes), `PhiSharkBridge first_run refresh` (188 nodes), and the original
+profile/callback query (451 nodes); displayed results were budget-truncated.
+Source review verified the separate mobile-auth dashboard branch, fixed mobile
+callback, API-key-only browser routes and refresh rotation dependency. No auth
+contract was migrated in this review. The edits affect Android UI/overlay and
+documentation only; the active external ARM build was not changed. Document
+semantics and other-branch snapshots retain the limitations below.
+
 Affected repo-local code graphs were extracted/updated without LLM extraction.
 Their intermediate snapshots point to the isolated feature worktrees and exact
 current source rather than silently replacing the dirty canonical checkout.

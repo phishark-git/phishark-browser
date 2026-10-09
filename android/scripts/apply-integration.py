@@ -174,6 +174,9 @@ def main():
             '                .setImageResource(R.drawable.phishark_icon);', 'welcome branding')
         text = replace_once(text, '        mAutoUpdaterCheckBox.setVisibility(visibility);',
             '        mAutoUpdaterCheckBox.setVisibility(View.GONE);', 'disabled upstream updater control')
+        text = replace_once(text, '    private void updateReportCheckbox() {',
+            '    private void updateReportCheckbox() {\n'
+            '        mAutoUpdaterCheckBox.setVisibility(View.GONE);', 'initial updater visibility')
         for number in (3, 4):
             text = replace_once(text, f'        spans.add(buildPrivacyPolicyLink("{number}", R.string.privacy_link{number}));',
                 '', 'unused updater privacy link')

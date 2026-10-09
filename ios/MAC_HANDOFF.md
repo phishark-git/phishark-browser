@@ -3,6 +3,11 @@
 Hazırlanma: 9 Ekim 2026. Bu belge Mac tarafında insan veya Codex tarafından
 izlenebilir. Gerçek test sonuçları henüz bekleniyor.
 
+Hesapla ilk kurulum önerisi ve Android/Playwright davranış farkları:
+[giriş ve marka incelemesi](../docs/login-branding-review.md). Mevcut Swift/API
+anahtarı sözleşmesi henüz hesap oturumuna geçirilmedi; eski mobil uygulamanın
+`io.phishark.app` callback'ini tarayıcı için yeniden kullanmayın.
+
 ## Hedef ve eşzamanlı çalışma
 
 Mac tarafının ilk hedefi değiştirilmemiş Firefox iOS **Fennec** uygulamasını

@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-only
 package org.chromium.chrome.browser.phishark;
 
+import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.text.InputType;
 import android.view.Gravity;
 import android.view.ViewGroup;
@@ -42,6 +44,7 @@ public final class PhiSharkBridge {
     private AlertDialog verdictDialog;
     private WebContents dialogContents;
     private long dialogGeneration = -1;
+    private String lastBadgeLabel = "";
 
     private static final class State {
         final int verdict;
@@ -61,8 +64,8 @@ public final class PhiSharkBridge {
     private PhiSharkBridge(Activity owner, ActivityTabProvider provider) {
         activity = new WeakReference<>(owner); tabs = provider;
         badge = new TextView(owner);
-        badge.setTextSize(10); badge.setPadding(10, 4, 10, 4);
-        badge.setTextColor(Color.WHITE); badge.setBackgroundColor(Color.rgb(26, 62, 87));
+        badge.setTextSize(11); badge.setPadding(dp(12), dp(6), dp(12), dp(6));
+        badge.setTextColor(Color.WHITE);
         badge.setContentDescription("PhiShark güvenlik paneli");
         badge.setOnClickListener(view -> showPanel());
         FrameLayout content = owner.findViewById(android.R.id.content);
@@ -86,6 +89,7 @@ public final class PhiSharkBridge {
         PhiSharkBridge bridge = WINDOWS.remove(owner);
         if (bridge == null) return;
         bridge.tabObserver.destroy();
+        bridge.badge.animate().cancel();
         if (bridge.verdictDialog != null) bridge.verdictDialog.dismiss();
         if (bridge.badge.getParent() instanceof ViewGroup) {
             ((ViewGroup) bridge.badge.getParent()).removeView(bridge.badge);
@@ -126,10 +130,32 @@ public final class PhiSharkBridge {
 
     private void refresh() {
         WebContents contents = current(); State state = STATES.get(contents);
-        badge.setText("PhiShark · " + (state != null && state.deepPending
+        String label = "PhiShark · " + (state != null && state.deepPending
                 ? (state.verdict == 2 ? "Uyarı · " : "") + "Derin analiz sürüyor"
                 : state != null && state.verdict == 1 && !state.deep
-                ? "URL kontrolü: düşük risk" : LABELS[state == null ? 4 : state.verdict]));
+                ? "URL kontrolü: düşük risk" : LABELS[state == null ? 4 : state.verdict]);
+        badge.setText(label);
+        int accent = state != null && state.verdict == 3 ? Color.rgb(255, 117, 117)
+                : state != null && (state.verdict == 2 || state.verdict == 5) ? Color.rgb(255, 202, 91)
+                : state == null || state.verdict == 4 ? Color.rgb(171, 190, 198)
+                : state.deepPending || state.verdict == 0 ? Color.rgb(0, 185, 214)
+                : Color.rgb(0, 240, 152);
+        GradientDrawable background = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[] {Color.rgb(9, 35, 48), Color.rgb(15, 60, 70)});
+        background.setCornerRadius(dp(16));
+        background.setStroke(dp(1), accent);
+        badge.setBackground(background);
+        // A short transition on a changed label, never an endless loading loop.
+        // Respect the system animation setting and keep the status text readable.
+        if (!label.equals(lastBadgeLabel)) {
+            badge.animate().cancel();
+            badge.setAlpha(1f);
+            if (!lastBadgeLabel.isEmpty() && badge.isShown() && ValueAnimator.areAnimatorsEnabled()) {
+                badge.setAlpha(0.72f);
+                badge.animate().alpha(1f).setDuration(220).start();
+            }
+            lastBadgeLabel = label;
+        }
         if (verdictDialog != null && (contents != dialogContents || state == null
                 || state.generation != dialogGeneration)) {
             verdictDialog.dismiss(); verdictDialog = null;
@@ -137,6 +163,10 @@ public final class PhiSharkBridge {
         if (state != null && (state.verdict == 3
                 || state.verdict == 2 && state.deep && !state.warningAccepted
                 || state.verdict == 5 && !state.serviceErrorShown)) showVerdict(contents, state);
+    }
+
+    private int dp(int value) {
+        return Math.round(value * badge.getResources().getDisplayMetrics().density);
     }
 
     private void returnToSafety(WebContents contents, State expected) {
