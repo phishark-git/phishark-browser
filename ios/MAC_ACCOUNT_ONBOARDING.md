@@ -198,7 +198,7 @@ görevinin kapsamında değildir.
 
 ## Son tercih: sessiz gezinme ve istek tekrarı
 
-Kullanıcı normal sayfada “düşük risk”, “kısmi kontrol” veya yükleniyor rozeti
+Kullanıcı normal sayfada “düşük risk” veya “kısmi kontrol” sonuç rozeti
 istemiyor. Hesap/koruma ayrıntılarını menüye koyun; yalnız risk kararında native
 uyarı/engel açın. Belirsiz/hizmet hatası sonuçlarını güvenli olarak değiştirmeyin.
 Mevcut 31–60 derin uyarı/devam ve >=61 kesin engel politikasını koruyun.

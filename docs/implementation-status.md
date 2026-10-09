@@ -20,6 +20,12 @@ Normal browsing now has no floating status badge; the app menu exposes account
 and protection details. Query changes, redirects and native blocks were exercised
 on the updated x64 emulator. [Measured evidence](android-request-deduplication.md).
 
+Active-scan UI `6f9f1da1`: a small wait indicator now appears only while the
+selected tab is being checked; completed results remain quiet. The x64 APK/AAB
+built and the indicator's appearance, completion and navigation-away behavior
+were observed on the emulator. Fixture request counts stayed at one preflight
+and one deep per new check. [Validation](android-scanning-indicator.md).
+
 | Gate | Status |
 | --- | --- |
 | Playwright implementation inspected | Complete; main and prompt-policy branches distinguished |
