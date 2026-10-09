@@ -48,7 +48,8 @@ deduplication/expiry/teardown, total response-read deadline, single capacity ret
 and distinct quota/configuration failures. C++ compiled in WSL with warnings as
 errors and passed the same 42 vectors plus navigation invariants. Android vault
 compiled against the pinned Chromium SDK (android-37.0). Browser contract CI
-passed at `43a95401`; platform integration is not covered by that job.
+passed at `51812052` with the HTTP fixture test; platform integration is not
+covered by that job.
 
 The eighth JS test uses a real loopback HTTP server and deterministic ephemeral
 API/page fixtures. It checks safe/warning/block/prompt and error responses, quota

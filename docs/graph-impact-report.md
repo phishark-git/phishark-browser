@@ -50,8 +50,8 @@ The grouped analyzers component was rebuilt from its 21 module snapshots after
 refreshing the six changed analyzer modules. The aggregate workspace graph was
 then rebuilt and the original query rerun.
 
-The server follow-up rebuild produced a workspace graph of 12,802 nodes and
-28,318 edges, with zero post-build dangling endpoints. The broad original query
+The final source/fixture rebuild produced a workspace graph of 12,814 nodes and
+28,339 edges, with zero post-build dangling endpoints. The broad original query
 was repeated against this refreshed graph and found 451 connected nodes; its CLI
 output was budget-truncated. Narrow source queries, rather than absence from the
 truncated output, determined the actual edit scope.
