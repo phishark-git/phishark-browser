@@ -81,3 +81,20 @@ test('Gatekeeper whitelist skips deep; unknown runs deep; blacklist never loads;
   assert.equal(tab.state.policy,'blocked');
   assert.equal(fixture.stats.privacyRejected,0);
 });
+test('fixture evidence audit distinguishes HTML-only capture from screenshot evidence without retaining content',async t=>{
+  const fixture=createFixtureServer();
+  await new Promise(resolve=>fixture.server.listen(0,'127.0.0.1',resolve));
+  t.after(()=>fixture.close());
+  const baseURL=`http://127.0.0.1:${fixture.server.address().port}`,target=baseURL+'/pages/capture';
+  const client=new BrowserClient({baseURL,apiKey:'fixture-only'});
+  const html='<html><head><title>PhiShark fixture: capture</title></head><body>sanitized capture</body></html>';
+  await client.scan(profiles.deep,target,{consent:true,evidence:{response:{html,url:target},capture_coverage:'partial_html_no_screenshot'}});
+  assert.deepEqual(fixture.stats.deepEvidence.capture,{
+    htmlBytes:Buffer.byteLength(html),screenshotBytes:0,hasHTML:true,hasScreenshot:false,
+    capturedTitleMatches:true,responseURLMatchesTarget:true,coverage:'partial_html_no_screenshot',
+    containsScript:false,containsFrame:false,
+  });
+  assert.equal(JSON.stringify(fixture.stats).includes(html),false);
+  assert.equal(JSON.stringify(fixture.stats).includes(target),false);
+  assert.equal(fixture.stats.privacyRejected,0);
+});

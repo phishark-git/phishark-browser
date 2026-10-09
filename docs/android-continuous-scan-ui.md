@@ -1,5 +1,9 @@
 # Continuous scan indicator and English UI
 
+Historical behavior: the user's later deep-only preference supersedes this
+preflight/document/deep indicator span. See
+[current indicator and evidence audit](android-deep-only-indicator.md).
+
 Impact query: `PhiSharkBridge refreshScanningIndicator updateState setDeepPending BrowserAccount`.
 Provider: browser-process preflight/content lifecycle. Direct consumer: JNI UI;
 indirect consumers: existing browser APIs (no new requests or schema changes).

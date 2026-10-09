@@ -278,7 +278,6 @@ class TabProtection final : public content::WebContentsObserver,
     if (capture_started_generation_ == generation_) return;
     capture_started_generation_ = generation_;
     awaiting_content_ = false;
-    Java_PhiSharkBridge_setDeepPending(env, web_contents(), static_cast<int64_t>(generation_));
     frame->ExecuteJavaScriptInIsolatedWorld(kCaptureScript,
         base::BindOnce(&TabProtection::Captured, weak_factory_.GetWeakPtr(), generation_),
         ISOLATED_WORLD_ID_CHROME_INTERNAL);
@@ -387,6 +386,10 @@ class TabProtection final : public content::WebContentsObserver,
     if (next_retry_ == RetryReason::kCapacity) ++capacity_retry_posts_;
     next_retry_ = RetryReason::kNone;
     PublishRequestCounts();
+    // Capture, URL checks, document loading and cache hits are not a deep POST.
+    // Keep this state through bounded retries until a terminal native update.
+    if (profile_ == Profile::kDeep)
+      Java_PhiSharkBridge_setDeepPending(env, web_contents(), static_cast<int64_t>(generation_));
     loader_->DownloadToString(factory, base::BindOnce(&TabProtection::ResponseReady,
         weak_factory_.GetWeakPtr()), kMaxResponseBytes);
   }

@@ -1,5 +1,11 @@
 # Implementation status
 
+Current requested UI: scanning label is deep-only, beginning at HTTP dispatch and
+ending at the terminal result. Preflight/document loading/capture/cache remain
+quiet. [Current validation and evidence audit](android-deep-only-indicator.md)
+supersedes the earlier continuous-indicator preference. Android screenshot,
+complete page metadata and captured redirect-chain evidence remain incomplete.
+
 Gatekeeper routing: explicit completed allow now skips HTML capture and deep;
 unknown low scores still run consented deep. Shared JS/C++/Swift source and tests
 are updated. Android build/device verification is recorded in

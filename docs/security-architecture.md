@@ -16,6 +16,12 @@ Preflight runs before document navigation where the engine allows. A medium pref
 
 ## Privacy and deadlines
 
+The floating scanning label is shown only during actual deep HTTP execution,
+starting at native dispatch and staying static through retries until a terminal
+result. Preflight, document loading, capture preparation and cache hits are quiet.
+This current preference supersedes the earlier continuous indicator behavior.
+[Evidence audit and device checks](android-deep-only-indicator.md).
+
 Completed, non-degraded explicit Gatekeeper preflight allow
 (`gatekeeper_benign:*`) skips page capture/deep for that navigation. A low score
 alone does not. Unknown targets retain consented deep; every redirect target is

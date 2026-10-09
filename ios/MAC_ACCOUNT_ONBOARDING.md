@@ -42,6 +42,22 @@ değişikliklerini birlikte koruyun. Tek tarafı topluca seçmeyin.
 
 ## İlk açılış deneyimi
 
+### Güncel scanning tercihi ve kanıt sınırı
+
+Kullanıcının son tercihi eski sürekli preflight→deep göstergesini değiştiriyor:
+yalnız gerçek deep isteği gönderilmeye başlayınca sabit İngilizce “PhiShark is
+scanning this page…” gösterin; preflight, sayfa yükleme, HTML hazırlama ve cache
+sonuçlarında göstermeyin. Deep tamamlanana, iptal/hata olana veya sekme değişene
+kadar sabit kalsın; retry sırasında yanıp sönmesin. Native API client dispatch
+olayına bağlayıp gecikmeli preflight/document/deep aşamalarıyla ayrı test edin.
+
+Android şu anda yalnız temizlenmiş gerçek HTML + URL gönderiyor; screenshot
+göndermiyor. Bu değişiklik screenshot hazır olduğu anlamına gelmez. Mac'te de
+WKWebView snapshot'ın form/frame/shadow/custom-control maskelemesini cihazda
+doğrulamadan screenshot göndermeyin; eksik kanıtla “tam/güvenli” sonucu üretmeyin.
+Outgoing links/header metadata ve gerçek redirect zinciri de kendi kanıtıyla
+doğrulanmalı. [Güncel audit](../docs/android-deep-only-indicator.md).
+
 ### Gatekeeper whitelist düzeltmesi (9 Ekim)
 
 Ortak dalın Swift `ScanResult.trustedPreflight` ve `NavigationSession.canCapture`

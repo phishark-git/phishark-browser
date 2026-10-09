@@ -45,9 +45,6 @@ public final class PhiSharkBridge {
     private final ActivityTabProvider tabs;
     private final View uiHost;
     private final TextView scanIndicator;
-    private final Runnable showScanIndicator = this::showScanningIndicator;
-    private WebContents indicatorContents;
-    private long indicatorGeneration = -1;
     private ActivityTabProvider.ActivityTabTabObserver tabObserver;
     private AlertDialog verdictDialog;
     private WebContents dialogContents;
@@ -117,7 +114,6 @@ public final class PhiSharkBridge {
         PhiSharkBridge bridge = WINDOWS.remove(owner);
         if (bridge == null) return;
         bridge.tabObserver.destroy();
-        bridge.uiHost.removeCallbacks(bridge.showScanIndicator);
         if (bridge.scanIndicator.getParent() instanceof ViewGroup) {
             ((ViewGroup) bridge.scanIndicator.getParent()).removeView(bridge.scanIndicator);
         }
@@ -202,30 +198,13 @@ public final class PhiSharkBridge {
 
     private static boolean isScanning(State state) {
         return state != null && state.verdict != 3 && state.verdict != 5
-                && (state.verdict == 0 || state.awaitingContent || state.deepPending);
+                && state.deepPending;
     }
 
     private void refreshScanningIndicator(WebContents contents, State state) {
-        boolean changedTab = contents != indicatorContents;
-        if (changedTab || !isScanning(state)) {
-            uiHost.removeCallbacks(showScanIndicator);
-            scanIndicator.setVisibility(View.GONE);
-        }
-        indicatorContents = contents;
-        indicatorGeneration = state == null ? -1 : state.generation;
-        if (isScanning(state) && scanIndicator.getVisibility() != View.VISIBLE) {
-            uiHost.removeCallbacks(showScanIndicator);
-            uiHost.postDelayed(showScanIndicator, 350);
-        }
-    }
-
-    private void showScanningIndicator() {
-        State state = STATES.get(current());
         Activity owner = activity.get();
-        if (owner != null && !owner.isFinishing() && current() == indicatorContents
-                && state != null && state.generation == indicatorGeneration && isScanning(state)) {
-            scanIndicator.setVisibility(View.VISIBLE);
-        }
+        scanIndicator.setVisibility(owner != null && !owner.isFinishing()
+                && contents == current() && isScanning(state) ? View.VISIBLE : View.GONE);
     }
 
     private int dp(int value) {

@@ -43,6 +43,7 @@ export function createFixtureServer({stallMs=30000}={}) {
   const stats={preflight:0,deep:0,privacyRejected:0,capacityRetries:0,
     pageGets:Object.fromEntries(scenarios.map(name=>[name,0])),redirectGets:0,
     redirectPreflights:0,
+    deepEvidence:{},
     requests:Object.fromEntries(scenarios.map(name=>[name,{preflight:0,deep:0}]))};
   const capacitySeen=new Set();
   const send=(res,status,body)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(body));};
@@ -98,6 +99,21 @@ export function createFixtureServer({stallMs=30000}={}) {
     if(redirectTarget&&!deep)stats.redirectPreflights++;
     if(!scenarios.includes(scenario))return send(res,400,{code:'FIXTURE_SCENARIO'});
     stats.requests[scenario][deep?'deep':'preflight']++;
+    if(deep){
+      // Only synthetic-fixture metadata, never captured HTML/pixels or URL logs.
+      const response=payload.web_evidence.response;
+      stats.deepEvidence[scenario]={
+        htmlBytes:Buffer.byteLength(response.html??''),
+        screenshotBytes:Buffer.byteLength(response.screenshot??''),
+        hasHTML:typeof response.html==='string'&&response.html.length>0,
+        hasScreenshot:typeof response.screenshot==='string'&&response.screenshot.length>0,
+        capturedTitleMatches:typeof response.html==='string'&&response.html.includes(`<title>PhiShark fixture: ${scenario}</title>`),
+        responseURLMatchesTarget:response.url===payload.target,
+        coverage:payload.web_evidence.capture_coverage??null,
+        containsScript:/<script\b/i.test(response.html??''),
+        containsFrame:/<(?:iframe|frame)\b/i.test(response.html??''),
+      };
+    }
     if(scenario==='auth')return send(res,401,{code:'INVALID_API_KEY'});
     if(scenario==='quota')return send(res,429,{code:'QUOTA_EXCEEDED'});
     if(scenario==='configuration')return send(res,503,{code:'BROWSER_NOT_CONFIGURED'});

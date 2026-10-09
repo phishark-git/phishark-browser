@@ -12,7 +12,7 @@
     <string name="phishark_ui_005">"Could not verify"</string>
     <string name="phishark_ui_006">"Setup / service error"</string>
     <string name="phishark_ui_007">"Analysis requests: URL 0 · Content 0"</string>
-    <string name="phishark_ui_008">"PhiShark is checking this page…"</string>
+    <string name="phishark_ui_008">"PhiShark is scanning this page…"</string>
     <string name="phishark_ui_009">"Analysis requests: URL "</string>
     <string name="phishark_ui_010">" · Content "</string>
     <string name="phishark_ui_011">"\nFrom cache: URL "</string>
