@@ -66,7 +66,7 @@ was closed and the browser left on the ordinary new-tab page without a badge.
 
 Browser/component/workspace graphs were refreshed and the initial query repeated.
 Browser: 534 nodes / 1,082 raw edges; component: 928 edges; workspace: 13,088 nodes
-/ 28,785 edges with no dangling aggregate endpoints. The query returned 137 nodes
+/ 28,785 edges with no dangling aggregate endpoints. The final query returned 148 nodes
 with budget truncation. Component generation excluded 143 external AST edges and
 reported four conceptual nodes without source files. Mixed branch snapshots,
 older node IDs and incomplete document semantics still limit impact analysis.
