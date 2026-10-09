@@ -187,6 +187,8 @@ class TabProtection final : public content::WebContentsObserver,
     detail_.clear();
     target_ = target.GetWithoutRef();
     generation_ = session_.Begin(target_.spec());
+    preflight_posts_ = deep_posts_ = preflight_cache_hits_ = deep_cache_hits_ = 0;
+    auth_retry_posts_ = capacity_retry_posts_ = 0;
     committed_generation_ = 0;
     capture_started_generation_ = 0;
     resolved_generation_ = 0; resolved_public_ = false;
@@ -203,6 +205,14 @@ class TabProtection final : public content::WebContentsObserver,
         base::android::ConvertUTF8ToJavaString(env, session_.last_safe_url()),
         profile == Profile::kDeep, base::android::ConvertUTF8ToJavaString(env, detail_),
         static_cast<int>(session_.url_verdict()));
+    PublishRequestCounts();
+  }
+  void PublishRequestCounts() {
+    // These are tab-local numbers, never URL/evidence/credential logs.
+    Java_PhiSharkBridge_updateRequestCounts(base::android::AttachCurrentThread(),
+        web_contents(), static_cast<int64_t>(generation_), preflight_posts_,
+        deep_posts_, preflight_cache_hits_, deep_cache_hits_, auth_retry_posts_,
+        capacity_retry_posts_);
   }
   void DidFinishNavigation(content::NavigationHandle* handle) override {
     if (!handle->IsInPrimaryMainFrame() || !handle->HasCommitted()
@@ -278,7 +288,7 @@ class TabProtection final : public content::WebContentsObserver,
   void Start(Profile profile, std::optional<base::DictValue> evidence) {
     auto version = Java_PhiSharkBridge_getSettingsVersion(base::android::AttachCurrentThread());
     if (version != settings_version_) { cache_.clear(); settings_version_ = version; }
-    profile_ = profile; attempt_ = 0; auth_retried_ = false;
+    profile_ = profile; attempt_ = 0; auth_retried_ = false; next_retry_ = RetryReason::kNone;
     detail_.clear();
     base::DictValue body; body.Set("target", target_.spec());
     if (evidence) body.Set("web_evidence", std::move(*evidence));
@@ -286,6 +296,9 @@ class TabProtection final : public content::WebContentsObserver,
     cache_key_ = (profile == Profile::kDeep ? "deep:" : "preflight:") + crypto::SHA256HashString(body_);
     auto cached = cache_.find(cache_key_);
     if (cached != cache_.end() && cached->second.expires > base::TimeTicks::Now()) {
+      if (profile == Profile::kDeep) ++deep_cache_hits_;
+      else ++preflight_cache_hits_;
+      PublishRequestCounts();
       base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE,
           base::BindOnce(&TabProtection::ResultReady, weak_factory_.GetWeakPtr(), cached->second.result));
       return;
@@ -351,6 +364,12 @@ class TabProtection final : public content::WebContentsObserver,
     loader_->SetTimeoutDuration(remaining);
     auto* factory = web_contents()->GetBrowserContext()->GetDefaultStoragePartition()
         ->GetURLLoaderFactoryForBrowserProcess().get();
+    if (profile_ == Profile::kDeep) ++deep_posts_;
+    else ++preflight_posts_;
+    if (next_retry_ == RetryReason::kAuth) ++auth_retry_posts_;
+    if (next_retry_ == RetryReason::kCapacity) ++capacity_retry_posts_;
+    next_retry_ = RetryReason::kNone;
+    PublishRequestCounts();
     loader_->DownloadToString(factory, base::BindOnce(&TabProtection::ResponseReady,
         weak_factory_.GetWeakPtr()), kMaxResponseBytes);
   }
@@ -385,6 +404,7 @@ class TabProtection final : public content::WebContentsObserver,
         && Java_PhiSharkBridge_usesAccount(base::android::AttachCurrentThread())
         && base::TimeTicks::Now() < deadline_) {
       auth_retried_ = true;
+      next_retry_ = RetryReason::kAuth;
       Java_PhiSharkBridge_refreshAccount(base::android::AttachCurrentThread());
       Send(); return;
     }
@@ -412,6 +432,7 @@ class TabProtection final : public content::WebContentsObserver,
       double seconds = 0; base::StringToDouble(retry, &seconds);
       auto delay = base::Milliseconds(std::isfinite(seconds) ? std::clamp(seconds * 1000, 0., 2000.) : 0.);
       if (base::TimeTicks::Now() + delay >= deadline_) { Unavailable(false); return; }
+      next_retry_ = RetryReason::kCapacity;
       base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(FROM_HERE,
           base::BindOnce(&TabProtection::Send, weak_factory_.GetWeakPtr()), delay); return;
     }
@@ -496,6 +517,11 @@ class TabProtection final : public content::WebContentsObserver,
   std::string body_, cache_key_;
   int attempt_ = 0;
   bool auth_retried_ = false;
+  enum class RetryReason { kNone, kAuth, kCapacity };
+  RetryReason next_retry_ = RetryReason::kNone;
+  int preflight_posts_ = 0, deep_posts_ = 0;
+  int preflight_cache_hits_ = 0, deep_cache_hits_ = 0;
+  int auth_retry_posts_ = 0, capacity_retry_posts_ = 0;
   int64_t settings_version_ = -1;
   base::TimeTicks deadline_;
   std::unique_ptr<network::SimpleURLLoader> loader_;

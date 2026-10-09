@@ -224,3 +224,15 @@ hata/iptalde gizleyin; düşük risk/kısmi kontrol rozeti göstermeyin. Yüzde 
 güvenli sonucu uydurmayın. Gösterge yeni istek başlatmamalı; sekme/gezinme kimliği
 ile stale olayları reddetmeli. Bu bir bilgi göstergesidir, yeni etkileşim engeli
 değildir. Mevcut risk uyarısı ve kesin engel ekranları korunur.
+
+### İstek sayacı ve analiz aşaması
+
+Gösterge URL kontrolünde “PhiShark adresi kontrol ediyor · Bekleyin”, deep
+aşamasında “PhiShark içeriği analiz ediyor · Bekleyin” desin. Koruma paneli
+sonucun preflight mı deep mi olduğunu ve o gezinme neslindeki gerçek analiz
+POST denemelerini göstersin. URL/deep sayıları, önbellek kullanımı ve 401/kapasite
+tekrarları ayrı olsun. Sayaçları yalnız bellekte tutun; URL, içerik, kimlik veya
+yanıt loglamayın. Hesap yenileme ve sayfa kaynak istekleri bu sayaca dahil değil.
+Yeni nesilde sıfırlayın; aynı belge/URL olaylarında koruyun. Redirect zinciri
+ve sekmeler toplamı gibi sunmayın. Android'in sonucu iOS doğrulaması değildir.
+[Kapsam ve doğrulama](../docs/android-request-observability.md).

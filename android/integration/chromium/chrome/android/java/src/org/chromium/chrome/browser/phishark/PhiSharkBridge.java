@@ -63,6 +63,7 @@ public final class PhiSharkBridge {
         final int urlVerdict;
         boolean warningAccepted;
         boolean deepPending;
+        String requestCounts = "Analiz API istekleri: URL 0 · İçerik 0";
         State(int verdict, long generation, String score, String lastSafe, boolean deep, String detail, int urlVerdict) {
             this.verdict = verdict; this.generation = generation;
             this.score = score; this.lastSafe = lastSafe; this.deep = deep;
@@ -141,8 +142,20 @@ public final class PhiSharkBridge {
         if (verdict < 0 || verdict >= LABELS.length || contents == null) return;
         State previous = STATES.get(contents);
         if (previous != null && generation < previous.generation) return;
-        STATES.put(contents, new State(verdict, generation, score, lastSafe, deep, detail, urlVerdict));
+        State updated = new State(verdict, generation, score, lastSafe, deep, detail, urlVerdict);
+        if (previous != null && previous.generation == generation) updated.requestCounts = previous.requestCounts;
+        STATES.put(contents, updated);
         for (PhiSharkBridge window : WINDOWS.values()) window.refresh();
+    }
+
+    @CalledByNative private static void updateRequestCounts(
+            @JniType("content::WebContents*") WebContents contents, long generation,
+            int preflight, int deep, int preflightCache, int deepCache, int authRetry, int capacityRetry) {
+        State state = STATES.get(contents);
+        if (state == null || state.generation != generation) return;
+        state.requestCounts = "Analiz API istekleri: URL " + preflight + " · İçerik " + deep
+                + "\nÖnbellekten: URL " + preflightCache + " · İçerik " + deepCache
+                + "\nTekrar POST'ları: kimlik " + authRetry + " · kapasite " + capacityRetry;
     }
 
     private WebContents current() {
@@ -186,6 +199,9 @@ public final class PhiSharkBridge {
     }
 
     private void refreshScanningIndicator(WebContents contents, State state) {
+        scanIndicator.setText(state != null && state.deepPending
+                ? "PhiShark içeriği analiz ediyor · Bekleyin"
+                : "PhiShark adresi kontrol ediyor · Bekleyin");
         boolean changed = contents != indicatorContents
                 || state == null || state.generation != indicatorGeneration;
         if (changed || !isScanning(state)) {
@@ -257,8 +273,11 @@ public final class PhiSharkBridge {
         State state = STATES.get(current());
         new AlertDialog.Builder(owner).setTitle("PhiShark Browser")
                 .setMessage("Durum: " + statusLabel(state)
+                        + (state == null ? "" : "\nSonuç aşaması: "
+                                + (state.deepPending || state.deep ? "İçerik (deep)" : "URL (preflight)"))
                         + (state == null || state.score.isEmpty() ? "" : "\nRisk skoru: " + state.score)
                         + (state == null || state.detail.isEmpty() ? "" : "\n" + state.detail)
+                        + (state == null ? "" : "\n\n" + state.requestCounts)
                         + "\n\n" + BrowserAccount.status()
                         + "\n\nGizli modda yalnız URL kontrolü yapılır.")
                 .setPositiveButton("Hesap ve koruma", (dialog, which) -> showAccount(false))
