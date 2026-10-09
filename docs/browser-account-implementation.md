@@ -82,3 +82,23 @@ iOS: `BrowserAccountFlow` and purpose-specific Keychain storage were added to th
 standalone Swift package. They are uncompiled on Windows. The Mac handoff describes
 ASWebAuthenticationSession, token exchange/refresh and branding integration after
 the unchanged Fennec baseline. No working iOS login is claimed.
+
+## Login failure follow-up
+
+The generic start error hid HTTP failures behind a connectivity message. Android
+now distinguishes missing/unsupported routes (404/405), throttling (429), server
+errors, timeout, connection and invalid-response/storage failures without showing
+response bodies or account secrets. The public API contract is unchanged.
+The dashboard pairing branch is reconciled with current main while preserving
+both browser pairing and the existing deep-scan route. Implementation order is
+dashboard conflict resolution and Android diagnostic copy; deployment order and
+the separate production approval gate remain unchanged.
+
+GitHub evidence on 2026-10-09: the last successful official backend workflow
+run `36936617829` used `9d6cc566`, whose source has no `/browser/auth` routes;
+dashboard run `36941978828` used `2d46213d`, whose source has no
+`/browser/connect` route. This proves the new routes are absent from those
+workflow revisions, not the exact live HTTP response or unobserved runtime
+changes. No production request or VDS inspection was performed. Dashboard
+reconciliation `f0b17e6` passed 86 tests, serve-config validation and build;
+PR 29 is mergeable. Backend PRs 20/21 remain open with successful CI.

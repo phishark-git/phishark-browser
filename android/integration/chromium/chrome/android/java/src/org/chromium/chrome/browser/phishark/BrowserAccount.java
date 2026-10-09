@@ -140,7 +140,27 @@ public final class BrowserAccount {
                     try { openExternal(owner, url); result.accept("Giriş sayfasında hesabınızı bağlayın"); }
                     catch (Exception ignored) { result.accept("Giriş için cihazda başka bir tarayıcı bulunamadı"); }
                 });
-            } catch (Exception ignored) { MAIN.post(() -> result.accept("Giriş başlatılamadı. Bağlantıyı ve hizmet durumunu kontrol edin.")); }
+            } catch (RequestError error) {
+                // Fixed messages/status only: never expose response bodies, flow
+                // identifiers or credentials in the UI or logs.
+                final String message;
+                if (error.status == 404 || error.status == 405) {
+                    message = "PhiShark Browser giriş hizmeti bu sunucuda kullanılamıyor (HTTP " + error.status + "). Hizmetin yayımlanması veya yapılandırılması gerekiyor.";
+                } else if (error.status == 429) {
+                    message = "Çok fazla giriş denemesi yapıldı. Biraz bekleyip tekrar deneyin (HTTP 429).";
+                } else if (error.status >= 500) {
+                    message = "PhiShark giriş hizmeti şu anda kullanılamıyor (HTTP " + error.status + "). Daha sonra tekrar deneyin.";
+                } else {
+                    message = "PhiShark giriş isteği tamamlanamadı (HTTP " + error.status + "). Hizmet yapılandırmasını kontrol edin.";
+                }
+                MAIN.post(() -> result.accept(message));
+            } catch (java.net.SocketTimeoutException ignored) {
+                MAIN.post(() -> result.accept("PhiShark giriş hizmeti zamanında yanıt vermedi. Tekrar deneyin."));
+            } catch (java.io.IOException ignored) {
+                MAIN.post(() -> result.accept("PhiShark giriş hizmetine güvenli bağlantı kurulamadı. İnternet bağlantınızı kontrol edin."));
+            } catch (Exception ignored) {
+                MAIN.post(() -> result.accept("PhiShark giriş yanıtı doğrulanamadı veya cihazda güvenli saklanamadı. Tekrar deneyin."));
+            }
         });
     }
     private static void openExternal(Activity owner, String url) {

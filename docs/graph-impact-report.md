@@ -42,6 +42,14 @@ feature flags or deployment state.
 
 ## Refresh evidence and limitations
 
+The login-error follow-up refreshed browser/dashboard code graphs, browser and
+clients components, then workspace: 13,045 nodes and 28,726 edges, zero aggregate
+dangling endpoints. `BrowserAccount setupBrowserAuthRoutes RequestError` was
+repeated and found 81 nodes (display budget truncated). Source confirms only
+Android error presentation and dashboard reconciliation with main changed;
+backend contracts and deployment dependencies remain unchanged. The semantic
+document/other-branch/external-source limitations below still apply.
+
 The account-pairing implementation refreshed backend and browser repo-local code
 graphs plus the dashboard worktree graph, rebuilt backend/browser/clients
 components, then rebuilt the workspace: 13,035 nodes, 28,721 edges and zero
