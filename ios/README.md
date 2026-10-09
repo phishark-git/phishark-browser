@@ -1,5 +1,8 @@
 # iOS
 
+Mac'te eşzamanlı çalışma için Türkçe görev ve test rehberi:
+[MAC_HANDOFF.md](MAC_HANDOFF.md).
+
 `upstream/` is the pinned, unmodified Firefox iOS subtree. Its root README specifies Xcode 26.5, Swift 6.2 and iOS 15+. `security/` provides an independent Swift package with decision/session policy, Keychain storage and shared-vector tests. It has not been compiled on Windows.
 
 On the MacBook, install the full Xcode **26.5** application and Node.js **22+**.
