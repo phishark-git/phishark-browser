@@ -155,8 +155,8 @@ class TabProtection final : public content::WebContentsObserver,
     preflight_pending_ = true;
     completions_.push_back(std::move(completion));
     if (!CanScanTarget(target)) {
-      detail_ = UseLocalFixtures() ? "Yerel test modu açık; gerçek siteler bu modda analiz edilmez."
-          : "Bu adres genel internet sayfası olarak taranamıyor.";
+      detail_ = UseLocalFixtures() ? "Local fixture mode is enabled; real websites are not analyzed in this mode."
+          : "This address cannot be scanned as a public internet page.";
       base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE,
           base::BindOnce(&TabProtection::Unavailable, weak_factory_.GetWeakPtr(), false, detail_)); return;
     }
@@ -171,7 +171,8 @@ class TabProtection final : public content::WebContentsObserver,
     if (UseLocalFixtures() && address.IsLoopback() && CanScanTarget(target_)) resolved_public_ = true;
     resolved_generation_ = generation_;
     if (!resolved_public_) {
-      detail_ = "Sayfanın genel internet bağlantısı doğrulanamadı; içerik analizi yapılmadı.";
+      awaiting_content_ = false;
+      detail_ = "The public internet connection could not be verified; content analysis was not performed.";
       session_.Unavailable(generation_); Update(Profile::kPreflight, "");
     }
   }
@@ -187,6 +188,7 @@ class TabProtection final : public content::WebContentsObserver,
     detail_.clear();
     target_ = target.GetWithoutRef();
     generation_ = session_.Begin(target_.spec());
+    awaiting_content_ = false;
     preflight_posts_ = deep_posts_ = preflight_cache_hits_ = deep_cache_hits_ = 0;
     auth_retry_posts_ = capacity_retry_posts_ = 0;
     committed_generation_ = 0;
@@ -198,13 +200,14 @@ class TabProtection final : public content::WebContentsObserver,
     Update(Profile::kPreflight, "");
   }
   void Update(Profile profile, const std::string& score) {
+    if (profile == Profile::kDeep) awaiting_content_ = false;
     JNIEnv* env = base::android::AttachCurrentThread();
     Java_PhiSharkBridge_updateState(env, web_contents(),
         static_cast<int>(session_.verdict()), static_cast<int64_t>(generation_),
         base::android::ConvertUTF8ToJavaString(env, score),
         base::android::ConvertUTF8ToJavaString(env, session_.last_safe_url()),
         profile == Profile::kDeep, base::android::ConvertUTF8ToJavaString(env, detail_),
-        static_cast<int>(session_.url_verdict()));
+        static_cast<int>(session_.url_verdict()), profile == Profile::kPreflight && awaiting_content_);
     PublishRequestCounts();
   }
   void PublishRequestCounts() {
@@ -215,8 +218,15 @@ class TabProtection final : public content::WebContentsObserver,
         capacity_retry_posts_);
   }
   void DidFinishNavigation(content::NavigationHandle* handle) override {
-    if (!handle->IsInPrimaryMainFrame() || !handle->HasCommitted()
-        || handle->IsErrorPage() || !handle->GetURL().SchemeIsHTTPOrHTTPS()) return;
+    if (!handle->IsInPrimaryMainFrame()) return;
+    if ((!handle->HasCommitted() || handle->IsErrorPage())
+        && handle->GetNavigationId() == navigation_id_ && awaiting_content_) {
+      awaiting_content_ = false;
+      detail_ = "The page did not finish loading; content analysis was not performed.";
+      session_.Unavailable(generation_); Update(Profile::kPreflight, "");
+    }
+    if (!handle->HasCommitted() || handle->IsErrorPage()
+        || !handle->GetURL().SchemeIsHTTPOrHTTPS()) return;
     if (handle->GetNavigationId() == navigation_id_
         && handle->GetURL().GetWithoutRef() == target_
         && resolved_generation_ == generation_ && resolved_public_
@@ -237,7 +247,7 @@ class TabProtection final : public content::WebContentsObserver,
     // navigations invalidate pending scans and allow returning to safety.
     if (replacing_blocked_document_ && handle->GetURL().spec() == "about:blank") return;
     Begin(handle->GetURL()); navigation_id_ = handle->GetNavigationId();
-    detail_ = "Bu tarayıcı sayfası taranmaz. Kontrol için bir web sitesi açın.";
+    detail_ = "This browser page is not scanned. Open a website to check it.";
     session_.Unavailable(generation_); Update(Profile::kPreflight, "");
   }
   void DocumentOnLoadCompletedInPrimaryMainFrame() override { Capture(); }
@@ -249,6 +259,11 @@ class TabProtection final : public content::WebContentsObserver,
     JNIEnv* env = base::android::AttachCurrentThread();
     // A test-only synthetic loopback session grants no consent for real pages.
     session_.SetConsent(Java_PhiSharkBridge_hasDeepConsent(env) || UseLocalFixtures());
+    if (awaiting_content_ && !session_.CanCapture()) {
+      awaiting_content_ = false;
+      detail_ = "Content analysis is not enabled for this session.";
+      session_.Unavailable(generation_); Update(Profile::kPreflight, "");
+    }
     if (!session_.CanCapture() || session_.verdict() == Verdict::kServiceError
         || !CanScanTarget(target_) || committed_generation_ != generation_
         || preflight_pending_ || loader_
@@ -256,11 +271,12 @@ class TabProtection final : public content::WebContentsObserver,
     auto* frame = web_contents()->GetPrimaryMainFrame();
     if (!frame || !frame->IsRenderFrameLive()) return;
     if (!PublicDocumentConnection::GetForCurrentDocument(frame)) {
-      detail_ = "Sayfanın genel internet bağlantısı doğrulanamadı; içerik analizi yapılmadı.";
+      detail_ = "The public internet connection could not be verified; content analysis was not performed.";
       session_.Unavailable(generation_); Update(Profile::kDeep, ""); return;
     }
     if (capture_started_generation_ == generation_) return;
     capture_started_generation_ = generation_;
+    awaiting_content_ = false;
     Java_PhiSharkBridge_setDeepPending(env, web_contents(), static_cast<int64_t>(generation_));
     frame->ExecuteJavaScriptInIsolatedWorld(kCaptureScript,
         base::BindOnce(&TabProtection::Captured, weak_factory_.GetWeakPtr(), generation_),
@@ -271,12 +287,12 @@ class TabProtection final : public content::WebContentsObserver,
         || UseLocalFixtures());
     if (generation != generation_ || session_.verdict() == Verdict::kBlocked) return;
     if (!session_.CanCapture()) {
-      detail_ = "İçerik analizi için normal mod onayı gerekiyor; gizli mod yalnız URL kontrolüdür.";
+      detail_ = "Content analysis requires normal-mode consent; incognito mode checks URLs only.";
       session_.Unavailable(generation_); Update(Profile::kDeep, ""); return;
     }
     const std::string* html = value.GetIfString();
     if (!html || html->empty() || html->size() > kMaxHtmlBytes) {
-      detail_ = "Sayfa içeriği güvenli biçimde alınamadı veya boyut sınırını aştı.";
+      detail_ = "Page content could not be captured safely or exceeded the size limit.";
       session_.Unavailable(generation_); Update(Profile::kDeep, ""); return;
     }
     base::DictValue response; response.Set("html", *html); response.Set("url", target_.spec());
@@ -308,7 +324,7 @@ class TabProtection final : public content::WebContentsObserver,
   }
   void Send() {
     JNIEnv* env = base::android::AttachCurrentThread();
-    if (base::TimeTicks::Now() >= deadline_) { Unavailable(false, "Analiz süre sınırında tamamlanamadı."); return; }
+    if (base::TimeTicks::Now() >= deadline_) { Unavailable(false, "The analysis did not finish before its deadline."); return; }
     if (settings_version_ != Java_PhiSharkBridge_getSettingsVersion(env)) { cache_.clear(); Unavailable(true); return; }
     const bool account = !UseLocalFixtures() && Java_PhiSharkBridge_usesAccount(env);
     if (profile_ == Profile::kDeep) {
@@ -347,7 +363,7 @@ class TabProtection final : public content::WebContentsObserver,
       std::fill(key.begin(), key.end(), 0);
       base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE,
           base::BindOnce(&TabProtection::Unavailable, weak_factory_.GetWeakPtr(), true,
-              std::string("Hesap kimliği veya API bağlantı ayarı kullanılamıyor."))); return;
+              std::string("The account credential or API connection setting is unavailable."))); return;
     }
     auto request = std::make_unique<network::ResourceRequest>(); request->url = api;
     request->method = "POST"; request->credentials_mode = network::mojom::CredentialsMode::kOmit;
@@ -373,9 +389,12 @@ class TabProtection final : public content::WebContentsObserver,
     loader_->DownloadToString(factory, base::BindOnce(&TabProtection::ResponseReady,
         weak_factory_.GetWeakPtr()), kMaxResponseBytes);
   }
-  void Unavailable(bool service_error, std::string detail = "Analiz tamamlanamadı; bağlantı veya hizmet geçici olarak kullanılamıyor.") {
+  void Unavailable(bool service_error, std::string detail = "The analysis could not be completed; the connection or service is temporarily unavailable.") {
     detail_ = std::move(detail);
-    loader_.reset(); ClearBody(); session_.Unavailable(generation_, service_error); Update(profile_, "");
+    loader_.reset(); ClearBody(); session_.Unavailable(generation_, service_error);
+    awaiting_content_ = profile_ == Profile::kPreflight && !service_error && ExpectContent();
+    ScheduleContentWaitLimit();
+    Update(profile_, "");
     CompletePreflight(false);
   }
   void CompletePreflight(bool blocked) {
@@ -413,15 +432,15 @@ class TabProtection final : public content::WebContentsObserver,
     const bool transient_status = status == 0 || status == 429 || status == 500
         || status == 502 || status == 503 || status == 504;
     if (status >= 400 && !transient_status) {
-      Unavailable(true, "Analiz isteği kabul edilmedi (HTTP " + base::NumberToString(status) + ")."); return;
+      Unavailable(true, "The analysis request was not accepted (HTTP " + base::NumberToString(status) + ")."); return;
     }
     if (net_error != net::OK || base::TimeTicks::Now() >= deadline_) {
-      Unavailable(false, "Analiz bağlantısı tamamlanamadı (ağ kodu " + base::NumberToString(net_error)
+      Unavailable(false, "The analysis connection did not complete (network code " + base::NumberToString(net_error)
           + ", HTTP " + base::NumberToString(status) + ")."); return;
     }
     auto json = body ? base::JSONReader::Read(*body, base::JSON_PARSE_RFC) : std::nullopt;
     if ((!json || !json->is_dict()) && status != 429) {
-      Unavailable(false, "Analiz hizmetinden geçerli yanıt alınamadı (HTTP " + base::NumberToString(status) + ")."); return;
+      Unavailable(false, "No valid response was received from the analysis service (HTTP " + base::NumberToString(status) + ")."); return;
     }
     const base::DictValue empty;
     const auto& envelope = json && json->is_dict() ? json->GetDict() : empty;
@@ -438,7 +457,7 @@ class TabProtection final : public content::WebContentsObserver,
     }
     if (status < 200 || status >= 300) {
       Unavailable(service_code || !transient_status,
-          "Analiz hizmeti isteği tamamlayamadı (HTTP " + base::NumberToString(status) + ")."); return;
+          "The analysis service could not complete the request (HTTP " + base::NumberToString(status) + ")."); return;
     }
     const auto* data = envelope.FindDict("data"); if (!data) data = &envelope;
     Result result;
@@ -468,12 +487,14 @@ class TabProtection final : public content::WebContentsObserver,
     detail_.clear();
     if (profile_ == Profile::kDeep && Decide(profile_, result) == Verdict::kSafe) {
       result.degraded = true;
-      detail_ = "Kısmi sayfa içeriği analiz edildi; ekran görüntüsü doğrulanmadığı için tam güvenlik sonucu verilemiyor.";
+      detail_ = "Partial page content was analyzed; a complete security result is unavailable because screenshot capture has not been verified.";
     } else if (Decide(profile_, result) == Verdict::kUnverified) {
-      detail_ = result.degraded ? "Analiz hizmeti bazı kontrolleri tamamlayamadı."
-          : "Analiz sonucu karar vermek için yeterli değil.";
+      detail_ = result.degraded ? "The analysis service could not complete some checks."
+          : "The analysis result is insufficient for a decision.";
     }
     session_.Apply(generation_, profile_, result);
+    awaiting_content_ = profile_ == Profile::kPreflight && ExpectContent();
+    ScheduleContentWaitLimit();
     const bool blocked = session_.verdict() == Verdict::kBlocked;
     const std::string score = result.score ? base::NumberToString(*result.score) : "";
     Update(profile_, score);
@@ -501,6 +522,24 @@ class TabProtection final : public content::WebContentsObserver,
     std::fill(body_.begin(), body_.end(), '\0');
     body_.clear();
   }
+  bool ExpectContent() {
+    session_.SetConsent(Java_PhiSharkBridge_hasDeepConsent(base::android::AttachCurrentThread())
+        || UseLocalFixtures());
+    return session_.CanCapture() && session_.verdict() != Verdict::kServiceError
+        && CanScanTarget(target_);
+  }
+  void ScheduleContentWaitLimit() {
+    if (!awaiting_content_) return;
+    base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(FROM_HERE,
+        base::BindOnce(&TabProtection::ContentWaitExpired, weak_factory_.GetWeakPtr(), generation_),
+        base::Seconds(30));
+  }
+  void ContentWaitExpired(uint64_t generation) {
+    if (generation != generation_ || !awaiting_content_) return;
+    awaiting_content_ = false;
+    detail_ = "The page is taking too long to load; content has not been checked yet.";
+    session_.Unavailable(generation_); Update(Profile::kPreflight, "");
+  }
   NavigationSession session_;
   uint64_t generation_ = 0;
   uint64_t committed_generation_ = 0;
@@ -513,6 +552,7 @@ class TabProtection final : public content::WebContentsObserver,
   std::string detail_;
   Profile profile_ = Profile::kPreflight;
   bool preflight_pending_ = false;
+  bool awaiting_content_ = false;
   std::vector<Completion> completions_;
   std::string body_, cache_key_;
   int attempt_ = 0;

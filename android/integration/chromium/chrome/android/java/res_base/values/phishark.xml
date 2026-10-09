@@ -2,7 +2,87 @@
 <!-- SPDX-License-Identifier: GPL-3.0-only -->
 <resources>
     <item type="id" name="phishark_protection_id" />
-    <string name="phishark_protection_menu" translatable="false">PhiShark · Hesap ve koruma</string>
+    <string name="phishark_protection_menu" translatable="false">PhiShark · Account and protection</string>
     <string name="phishark_terms_url" translatable="false">https://phishark.io/en/legal/terms</string>
     <string name="phishark_privacy_url" translatable="false">https://phishark.io/en/legal/privacy</string>
+    <string name="phishark_ui_001">"Checking"</string>
+    <string name="phishark_ui_002">"Safe"</string>
+    <string name="phishark_ui_003">"Warning"</string>
+    <string name="phishark_ui_004">"Blocked"</string>
+    <string name="phishark_ui_005">"Could not verify"</string>
+    <string name="phishark_ui_006">"Setup / service error"</string>
+    <string name="phishark_ui_007">"Analysis requests: URL 0 · Content 0"</string>
+    <string name="phishark_ui_008">"PhiShark is checking this page…"</string>
+    <string name="phishark_ui_009">"Analysis requests: URL "</string>
+    <string name="phishark_ui_010">" · Content "</string>
+    <string name="phishark_ui_011">"\nFrom cache: URL "</string>
+    <string name="phishark_ui_012">"\nRetry requests: authentication "</string>
+    <string name="phishark_ui_013">" · capacity "</string>
+    <string name="phishark_ui_014">"Open a page"</string>
+    <string name="phishark_ui_015">"Warning · "</string>
+    <string name="phishark_ui_016">"Content analysis in progress"</string>
+    <string name="phishark_ui_017">"URL check: low risk"</string>
+    <string name="phishark_ui_018">"Low URL risk · Partial check"</string>
+    <string name="phishark_ui_019">"URL warning · Partial check"</string>
+    <string name="phishark_ui_020">"The PhiShark account or protection service could not be verified. This page has not been confirmed safe.\n"</string>
+    <string name="phishark_ui_021">"This navigation was assessed by the security check."</string>
+    <string name="phishark_ui_022">"Risk score: "</string>
+    <string name="phishark_ui_023">"Close"</string>
+    <string name="phishark_ui_024">"Back to safety"</string>
+    <string name="phishark_ui_025">"Continue this navigation"</string>
+    <string name="phishark_ui_026">"PhiShark account"</string>
+    <string name="phishark_ui_027">"Status: "</string>
+    <string name="phishark_ui_028">"\nResult phase: "</string>
+    <string name="phishark_ui_029">"Content (deep)"</string>
+    <string name="phishark_ui_030">"\nRisk score: "</string>
+    <string name="phishark_ui_031">"\n\nIncognito mode checks URLs only."</string>
+    <string name="phishark_ui_032">"Account and protection"</string>
+    <string name="phishark_ui_033">"About"</string>
+    <string name="phishark_ui_034">"PhiShark account protection and URL-only checks in incognito mode.\n\n"</string>
+    <string name="phishark_ui_035">"Open source foundation: Chromium and Cromite. Applicable licenses and third-party notices are preserved."</string>
+    <string name="phishark_ui_036">"Open source licenses"</string>
+    <string name="phishark_ui_037">"Developer settings"</string>
+    <string name="phishark_ui_038">"Your account is connected. Your session is stored securely on this device."</string>
+    <string name="phishark_ui_039">"Sign in with your PhiShark account to connect protection without copying an API key. Your session will be remembered when you reopen the browser."</string>
+    <string name="phishark_ui_040">"I allow the full URL, including its query, and sanitized page content to be sent to PhiShark for analysis in normal mode. Incognito mode sends only the URL."</string>
+    <string name="phishark_ui_041">"Continue browsing"</string>
+    <string name="phishark_ui_042">"Sign in to PhiShark"</string>
+    <string name="phishark_ui_043">"Skip for now"</string>
+    <string name="phishark_ui_044">"Sign out"</string>
+    <string name="phishark_ui_045">"Opening PhiShark sign-in…"</string>
+    <string name="phishark_ui_046">"PhiShark API address (HTTPS)"</string>
+    <string name="phishark_ui_047">"Personal API key (enter to replace)"</string>
+    <string name="phishark_ui_048">"I allow the full URL, including its query, and sanitized page content to be sent to PhiShark in normal mode. Incognito mode sends only the URL."</string>
+    <string name="phishark_ui_049">"PhiShark API setup"</string>
+    <string name="phishark_ui_050">"Save"</string>
+    <string name="phishark_ui_051">"Cancel"</string>
+    <string name="phishark_ui_052">"Delete key"</string>
+    <string name="phishark_ui_053">"Could not delete the key."</string>
+    <string name="phishark_ui_054">"Enter a valid HTTPS API address"</string>
+    <string name="phishark_ui_055">"Could not save settings"</string>
+    <string name="phishark_ui_056">"Sign in to your PhiShark account"</string>
+    <string name="phishark_ui_057">"Your PhiShark account is connected"</string>
+    <string name="phishark_ui_058">"Could not read the session; sign in again"</string>
+    <string name="phishark_ui_059">"Your session has expired; sign in again"</string>
+    <string name="phishark_ui_060">"Could not refresh the session; retrying when connected"</string>
+    <string name="phishark_ui_061">"Could not refresh the session"</string>
+    <string name="phishark_ui_062">"Connect your account on the sign-in page"</string>
+    <string name="phishark_ui_063">"No other browser was found on this device for sign-in"</string>
+    <string name="phishark_ui_064">"The PhiShark Browser sign-in service is unavailable on this server (HTTP "</string>
+    <string name="phishark_ui_065">"). The service needs to be deployed or configured."</string>
+    <string name="phishark_ui_066">"Too many sign-in attempts. Wait a moment and try again (HTTP 429)."</string>
+    <string name="phishark_ui_067">"The PhiShark sign-in service is currently unavailable (HTTP "</string>
+    <string name="phishark_ui_068">"). Try again later."</string>
+    <string name="phishark_ui_069">"The PhiShark sign-in request could not be completed (HTTP "</string>
+    <string name="phishark_ui_070">"). Check the service configuration."</string>
+    <string name="phishark_ui_071">"The PhiShark sign-in service did not respond in time. Try again."</string>
+    <string name="phishark_ui_072">"Could not establish a secure connection to PhiShark sign-in. Check your internet connection."</string>
+    <string name="phishark_ui_073">"The PhiShark sign-in response could not be verified or stored securely on this device. Try again."</string>
+    <string name="phishark_ui_074">"Sign-in could not be completed. Try again from PhiShark Browser."</string>
+    <string name="phishark_ui_075">"Signed out of PhiShark"</string>
+    <string name="phishark_ui_076">"Signed out on this device; you can also revoke the server session from your account"</string>
+    <string name="phishark_ui_077">"Developer API key mode"</string>
+    <string name="phishark_ui_078">"PhiShark Browser\nConnecting your account…"</string>
+    <string name="phishark_waiting_for_content">"Waiting for page content"</string>
+    <string name="phishark_welcome_body">"Welcome to PhiShark Browser. Sign in with your PhiShark account to connect protection. Content analysis in normal mode requires separate consent; incognito mode checks URLs only.\n\n&lt;PRIVACY_LINK1&gt;PhiShark Terms of Service&lt;/PRIVACY_LINK1&gt; · &lt;PRIVACY_LINK2&gt;PhiShark Privacy Policy&lt;/PRIVACY_LINK2&gt;"</string>
 </resources>

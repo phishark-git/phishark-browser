@@ -236,3 +236,18 @@ yanıt loglamayın. Hesap yenileme ve sayfa kaynak istekleri bu sayaca dahil de�
 Yeni nesilde sıfırlayın; aynı belge/URL olaylarında koruyun. Redirect zinciri
 ve sekmeler toplamı gibi sunmayın. Android'in sonucu iOS doğrulaması değildir.
 [Kapsam ve doğrulama](../docs/android-request-observability.md).
+
+### Güncel tercih: kesintisiz gösterge ve İngilizce arayüz
+
+PhiShark arayüzünü tamamen İngilizce yapın; Türkçe sabit metin bırakmayın.
+Metinleri platform string kaynaklarına taşıyın; İngilizce default yeterli.
+Tarayıcının dil ayarlarını veya kullanıcının web içeriğini değiştirmeyin.
+URL kontrolü → belge yükleme → deep arasında göstergeyi kapatıp yeniden açmayın.
+Tek sabit metin: “PhiShark is checking this page…”; aşama ayrıntısı panelde kalsın.
+Redirect nesil değişiminde aktif sekmede gösterge görünüyorsa koruyun; terminal
+sonuç, yükleme hata/iptali, dahili sayfa ve sekme değişiminde temizleyin.
+Belge beklemesini açık durum olarak modelleyin; uzun yüklemeyi sonsuz “scanning”
+olarak göstermeyin. Android belge beklemesini 30 saniyede unverified yapar;
+sonradan belge yüklenirse içerik analizi mevcut kuralla ayrıca başlayabilir.
+Gizli/onaysız oturumda deep beklemesi oluşturmayın. İstek sayaçlarını karşılaştırın;
+UI değişikliği yeni analiz isteği çıkarmamalı. Mac cihaz doğrulaması ayrıdır.

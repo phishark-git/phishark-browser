@@ -2,6 +2,7 @@
 package org.chromium.chrome.browser.phishark;
 
 import android.app.Activity;
+import org.chromium.chrome.R;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ResolveInfo;
@@ -29,6 +30,8 @@ import java.util.function.Consumer;
 
 /** Native account owner. Credentials and PKCE verifier never enter a renderer. */
 public final class BrowserAccount {
+    private static String text(int id) { return ContextUtils.getApplicationContext().getString(id); }
+
     public static final String API = "https://api.phishark.io";
     private static final String MODE = "phishark.account.enabled";
     private static final String PENDING = "phishark.account.pending";
@@ -39,7 +42,7 @@ public final class BrowserAccount {
     private static boolean loaded, refreshing;
     private static long epoch, retryAfter;
     private static Runnable listener;
-    private static String status = "PhiShark hesabınıza giriş yapın";
+    private static String status;
 
     private static SharedPreferences prefs() { return ContextUtils.getAppSharedPreferences(); }
     private static ApiKeyVault vault(String purpose) { return new ApiKeyVault(ContextUtils.getApplicationContext(), purpose); }
@@ -56,12 +59,13 @@ public final class BrowserAccount {
         try { vault(purpose).save(bytes); } finally { Arrays.fill(bytes, (byte)0); }
     }
     private static synchronized void load() {
+        if (status == null) status = text(R.string.phishark_ui_056);
         if (loaded) return;
         loaded = true;
         try {
             session = read("session");
-            if (session != null && enabled()) status = "PhiShark hesabınız bağlı";
-        } catch (Exception ignored) { status = "Oturum okunamadı; yeniden giriş yapın"; }
+            if (session != null && enabled()) status = text(R.string.phishark_ui_057);
+        } catch (Exception ignored) { status = text(R.string.phishark_ui_058); }
     }
     public static synchronized boolean enabled() { return prefs().getBoolean(MODE, false); }
     public static synchronized boolean signedIn() { load(); return enabled() && session != null; }
@@ -89,12 +93,12 @@ public final class BrowserAccount {
             } catch (RequestError error) {
                 synchronized (BrowserAccount.class) {
                     if (epoch == generation) {
-                        if (error.status == 401 || error.status == 403) clearSession("Oturum sona erdi; yeniden giriş yapın");
-                        else { status = "Oturum yenilenemedi; bağlantı kurulunca tekrar denenecek"; retryAfter = System.currentTimeMillis() + 5000; }
+                        if (error.status == 401 || error.status == 403) clearSession(text(R.string.phishark_ui_059));
+                        else { status = text(R.string.phishark_ui_060); retryAfter = System.currentTimeMillis() + 5000; }
                     }
                 }
             } catch (Exception ignored) {
-                synchronized (BrowserAccount.class) { if (epoch == generation) { status = "Oturum yenilenemedi"; retryAfter = System.currentTimeMillis() + 5000; } }
+                synchronized (BrowserAccount.class) { if (epoch == generation) { status = text(R.string.phishark_ui_061); retryAfter = System.currentTimeMillis() + 5000; } }
             } finally {
                 synchronized (BrowserAccount.class) { if (epoch == generation) refreshing = false; }
                 notifyChanged();
@@ -113,7 +117,7 @@ public final class BrowserAccount {
         JSONObject next = new JSONObject().put("access_token", access).put("refresh_token", refresh)
                 .put("expires_at", System.currentTimeMillis() + seconds * 1000);
         save("session", next); // Persist the replacement pair before making it available.
-        session = next; loaded = true; status = "PhiShark hesabınız bağlı"; retryAfter = 0;
+        session = next; loaded = true; status = text(R.string.phishark_ui_057); retryAfter = 0;
         if (newLogin) {
             prefs().edit().putBoolean(MODE, true).putBoolean("phishark.deep_consent.v1", false).commit();
             vault("api-key").clear(); bumpSettings();
@@ -140,29 +144,29 @@ public final class BrowserAccount {
                 MAIN.post(() -> {
                     synchronized (BrowserAccount.class) { if (generation != epoch) return; }
                     if (owner.isFinishing()) return;
-                    try { openExternal(owner, url); result.accept("Giriş sayfasında hesabınızı bağlayın"); }
-                    catch (Exception ignored) { result.accept("Giriş için cihazda başka bir tarayıcı bulunamadı"); }
+                    try { openExternal(owner, url); result.accept(text(R.string.phishark_ui_062)); }
+                    catch (Exception ignored) { result.accept(text(R.string.phishark_ui_063)); }
                 });
             } catch (RequestError error) {
                 // Fixed messages/status only: never expose response bodies, flow
                 // identifiers or credentials in the UI or logs.
                 final String message;
                 if (error.status == 404 || error.status == 405) {
-                    message = "PhiShark Browser giriş hizmeti bu sunucuda kullanılamıyor (HTTP " + error.status + "). Hizmetin yayımlanması veya yapılandırılması gerekiyor.";
+                    message = text(R.string.phishark_ui_064) + error.status + text(R.string.phishark_ui_065);
                 } else if (error.status == 429) {
-                    message = "Çok fazla giriş denemesi yapıldı. Biraz bekleyip tekrar deneyin (HTTP 429).";
+                    message = text(R.string.phishark_ui_066);
                 } else if (error.status >= 500) {
-                    message = "PhiShark giriş hizmeti şu anda kullanılamıyor (HTTP " + error.status + "). Daha sonra tekrar deneyin.";
+                    message = text(R.string.phishark_ui_067) + error.status + text(R.string.phishark_ui_068);
                 } else {
-                    message = "PhiShark giriş isteği tamamlanamadı (HTTP " + error.status + "). Hizmet yapılandırmasını kontrol edin.";
+                    message = text(R.string.phishark_ui_069) + error.status + text(R.string.phishark_ui_070);
                 }
                 MAIN.post(() -> result.accept(message));
             } catch (java.net.SocketTimeoutException ignored) {
-                MAIN.post(() -> result.accept("PhiShark giriş hizmeti zamanında yanıt vermedi. Tekrar deneyin."));
+                MAIN.post(() -> result.accept(text(R.string.phishark_ui_071)));
             } catch (java.io.IOException ignored) {
-                MAIN.post(() -> result.accept("PhiShark giriş hizmetine güvenli bağlantı kurulamadı. İnternet bağlantınızı kontrol edin."));
+                MAIN.post(() -> result.accept(text(R.string.phishark_ui_072)));
             } catch (Exception ignored) {
-                MAIN.post(() -> result.accept("PhiShark giriş yanıtı doğrulanamadı veya cihazda güvenli saklanamadı. Tekrar deneyin."));
+                MAIN.post(() -> result.accept(text(R.string.phishark_ui_073)));
             }
         });
     }
@@ -175,7 +179,7 @@ public final class BrowserAccount {
             }
         }
         if (candidates.isEmpty()) throw new IllegalStateException("External browser unavailable");
-        Intent chooser = Intent.createChooser(candidates.remove(0), "PhiShark hesabınıza giriş yapın");
+        Intent chooser = Intent.createChooser(candidates.remove(0), text(R.string.phishark_ui_056));
         chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, candidates.toArray(new Intent[0]));
         owner.startActivity(chooser);
     }
@@ -197,7 +201,7 @@ public final class BrowserAccount {
                         .put("device_id", pending.getString("device")).put("redirect_uri", BrowserOAuth.CALLBACK), null);
                 synchronized (BrowserAccount.class) { if (generation != epoch) return; accept(data, true); }
                 notifyChanged(); MAIN.post(() -> result.accept(null));
-            } catch (Exception ignored) { MAIN.post(() -> result.accept("Giriş tamamlanamadı. PhiShark Browser'dan yeniden deneyin.")); }
+            } catch (Exception ignored) { MAIN.post(() -> result.accept(text(R.string.phishark_ui_074))); }
         });
     }
     private static void clearSession(String message) {
@@ -207,14 +211,14 @@ public final class BrowserAccount {
     }
     public static synchronized void logout() {
         load(); JSONObject old = session;
-        clearSession("PhiShark hesabından çıkış yapıldı"); notifyChanged();
+        clearSession(text(R.string.phishark_ui_075)); notifyChanged();
         if (old != null) WORK.execute(() -> {
             try { request("logout", new JSONObject().put("refresh_token", old.getString("refresh_token")), old.getString("access_token")); }
-            catch (Exception ignored) { synchronized (BrowserAccount.class) { status = "Bu cihazdan çıkıldı; sunucu oturumunu hesabınızdan da kapatabilirsiniz"; } notifyChanged(); }
+            catch (Exception ignored) { synchronized (BrowserAccount.class) { status = text(R.string.phishark_ui_076); } notifyChanged(); }
         });
     }
     public static synchronized void useDeveloperKey() {
-        clearSession("Geliştirici API anahtarı modu"); prefs().edit().putBoolean(MODE, false).commit(); notifyChanged();
+        clearSession(text(R.string.phishark_ui_077)); prefs().edit().putBoolean(MODE, false).commit(); notifyChanged();
     }
     private static final class RequestError extends Exception {
         final int status;

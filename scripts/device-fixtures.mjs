@@ -7,7 +7,7 @@ import {pathToFileURL} from 'node:url';
 export const scenarios=['safe','preflight-warning','preflight-block','deep-warning','deep-block',
   'prompt-suspicious','prompt-malicious','degraded','negative','malformed','temporary',
   'auth','quota','configuration','capacity','stall','capture','popup','same-document',
-  'duplicate-history','duplicate-history-slow'];
+  'duplicate-history','duplicate-history-slow','handoff-slow'];
 
 function page(name) {
   const links=scenarios.map(x=>`<li><a href="/pages/${x}">${x}</a></li>`).join('');
@@ -59,6 +59,13 @@ export function createFixtureServer({stallMs=30000}={}) {
       const name=route.pathname.split('/')[2]||'safe';
       if(route.pathname!=='/'&&!scenarios.includes(name)){res.writeHead(404);return res.end();}
       stats.pageGets[name]++;
+      if(name==='handoff-slow') {
+        const timer=setTimeout(()=>{
+          res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'});
+          res.end(page(name));
+        },1500);
+        res.once('close',()=>clearTimeout(timer));return;
+      }
       res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Set-Cookie':'fixture-session=fixture-private-cookie; HttpOnly; SameSite=Lax','Cache-Control':'no-store'});
       return res.end(page(name));
     }
@@ -118,6 +125,10 @@ export function createFixtureServer({stallMs=30000}={}) {
     }
     if(scenario==='duplicate-history-slow'&&deep){
       const timer=setTimeout(()=>send(res,200,result),3000);
+      res.once('close',()=>clearTimeout(timer));return;
+    }
+    if(scenario==='handoff-slow'){
+      const timer=setTimeout(()=>send(res,200,result),deep?3000:1000);
       res.once('close',()=>clearTimeout(timer));return;
     }
     return send(res,200,result);

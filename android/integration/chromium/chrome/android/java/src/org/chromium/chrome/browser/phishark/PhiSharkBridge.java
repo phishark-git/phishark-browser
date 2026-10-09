@@ -32,11 +32,13 @@ import io.phishark.browser.security.ApiKeyVault;
 
 /** Browser-process UI and vault access; this class is never installed as a JS interface. */
 public final class PhiSharkBridge {
+    private static String text(int id) { return ContextUtils.getApplicationContext().getString(id); }
+
     private static final String BASE = "phishark.api_base";
     private static final String CONSENT = "phishark.deep_consent.v1";
     private static final String VERSION = "phishark.settings_version";
-    private static final String[] LABELS = {"Kontrol ediliyor", "Güvenli", "Uyarı",
-            "Engellendi", "Kontrol edilemedi", "Kurulum / hizmet hatası"};
+    private static final int[] LABELS = {R.string.phishark_ui_001, R.string.phishark_ui_002, R.string.phishark_ui_003,
+            R.string.phishark_ui_004, R.string.phishark_ui_005, R.string.phishark_ui_006};
     private static final WeakHashMap<WebContents, State> STATES = new WeakHashMap<>();
     private static final WeakHashMap<Activity, PhiSharkBridge> WINDOWS = new WeakHashMap<>();
     private final WeakReference<Activity> activity;
@@ -63,7 +65,8 @@ public final class PhiSharkBridge {
         final int urlVerdict;
         boolean warningAccepted;
         boolean deepPending;
-        String requestCounts = "Analiz API istekleri: URL 0 · İçerik 0";
+        boolean awaitingContent;
+        String requestCounts = text(R.string.phishark_ui_007);
         State(int verdict, long generation, String score, String lastSafe, boolean deep, String detail, int urlVerdict) {
             this.verdict = verdict; this.generation = generation;
             this.score = score; this.lastSafe = lastSafe; this.deep = deep;
@@ -76,7 +79,7 @@ public final class PhiSharkBridge {
         activity = new WeakReference<>(owner); tabs = provider;
         uiHost = owner.findViewById(android.R.id.content);
         scanIndicator = new TextView(owner);
-        scanIndicator.setText("PhiShark kontrol ediyor · Bekleyin");
+        scanIndicator.setText(text(R.string.phishark_ui_008));
         scanIndicator.setTextSize(12);
         scanIndicator.setTextColor(0xFFE1F3F5);
         scanIndicator.setPadding(dp(12), dp(7), dp(12), dp(7));
@@ -138,11 +141,13 @@ public final class PhiSharkBridge {
     @CalledByNative private static long getSettingsVersion() { return prefs().getLong(VERSION, 0); }
 
     @CalledByNative private static void updateState(@JniType("content::WebContents*") WebContents contents, int verdict,
-            long generation, String score, String lastSafe, boolean deep, String detail, int urlVerdict) {
+            long generation, String score, String lastSafe, boolean deep, String detail, int urlVerdict,
+            boolean awaitingContent) {
         if (verdict < 0 || verdict >= LABELS.length || contents == null) return;
         State previous = STATES.get(contents);
         if (previous != null && generation < previous.generation) return;
         State updated = new State(verdict, generation, score, lastSafe, deep, detail, urlVerdict);
+        updated.awaitingContent = awaitingContent;
         if (previous != null && previous.generation == generation) updated.requestCounts = previous.requestCounts;
         STATES.put(contents, updated);
         for (PhiSharkBridge window : WINDOWS.values()) window.refresh();
@@ -153,9 +158,9 @@ public final class PhiSharkBridge {
             int preflight, int deep, int preflightCache, int deepCache, int authRetry, int capacityRetry) {
         State state = STATES.get(contents);
         if (state == null || state.generation != generation) return;
-        state.requestCounts = "Analiz API istekleri: URL " + preflight + " · İçerik " + deep
-                + "\nÖnbellekten: URL " + preflightCache + " · İçerik " + deepCache
-                + "\nTekrar POST'ları: kimlik " + authRetry + " · kapasite " + capacityRetry;
+        state.requestCounts = text(R.string.phishark_ui_009) + preflight + text(R.string.phishark_ui_010) + deep
+                + text(R.string.phishark_ui_011) + preflightCache + text(R.string.phishark_ui_010) + deepCache
+                + text(R.string.phishark_ui_012) + authRetry + text(R.string.phishark_ui_013) + capacityRetry;
     }
 
     private WebContents current() {
@@ -167,18 +172,20 @@ public final class PhiSharkBridge {
         State state = STATES.get(contents);
         if (state == null || state.generation != generation || state.verdict == 3) return;
         state.deepPending = true;
+        state.awaitingContent = false;
         for (PhiSharkBridge window : WINDOWS.values()) window.refresh();
     }
 
     private static String statusLabel(State state) {
-        if (state == null) return "Sayfa açın";
-        if (state.deepPending) return (state.verdict == 2 ? "Uyarı · " : "") + "Derin analiz sürüyor";
-        if (state.verdict == 1 && !state.deep) return "URL kontrolü: düşük risk";
+        if (state != null && state.awaitingContent) return text(R.string.phishark_waiting_for_content);
+        if (state == null) return text(R.string.phishark_ui_014);
+        if (state.deepPending) return (state.verdict == 2 ? text(R.string.phishark_ui_015) : "") + text(R.string.phishark_ui_016);
+        if (state.verdict == 1 && !state.deep) return text(R.string.phishark_ui_017);
         // A URL verdict is scoped context. It never overrides a deep block,
         // warning or service error, nor turns incomplete capture into safe.
-        if (state.verdict == 4 && state.urlVerdict == 1) return "URL düşük risk · Kısmi kontrol";
-        if (state.verdict == 4 && state.urlVerdict == 2) return "URL uyarısı · Kısmi kontrol";
-        return LABELS[state.verdict];
+        if (state.verdict == 4 && state.urlVerdict == 1) return text(R.string.phishark_ui_018);
+        if (state.verdict == 4 && state.urlVerdict == 2) return text(R.string.phishark_ui_019);
+        return text(LABELS[state.verdict]);
     }
 
     private void refresh() {
@@ -195,16 +202,12 @@ public final class PhiSharkBridge {
 
     private static boolean isScanning(State state) {
         return state != null && state.verdict != 3 && state.verdict != 5
-                && (state.verdict == 0 || state.deepPending);
+                && (state.verdict == 0 || state.awaitingContent || state.deepPending);
     }
 
     private void refreshScanningIndicator(WebContents contents, State state) {
-        scanIndicator.setText(state != null && state.deepPending
-                ? "PhiShark içeriği analiz ediyor · Bekleyin"
-                : "PhiShark adresi kontrol ediyor · Bekleyin");
-        boolean changed = contents != indicatorContents
-                || state == null || state.generation != indicatorGeneration;
-        if (changed || !isScanning(state)) {
+        boolean changedTab = contents != indicatorContents;
+        if (changedTab || !isScanning(state)) {
             uiHost.removeCallbacks(showScanIndicator);
             scanIndicator.setVisibility(View.GONE);
         }
@@ -241,21 +244,21 @@ public final class PhiSharkBridge {
         dialogContents = contents; dialogGeneration = state.generation;
         boolean serviceError = state.verdict == 5;
         AlertDialog.Builder builder = new AlertDialog.Builder(owner)
-                .setTitle("PhiShark · " + LABELS[state.verdict])
-                .setMessage(serviceError ? "PhiShark hesabı veya koruma hizmeti doğrulanamadı. Bu sayfa güvenli olarak onaylanmadı.\n" + state.detail
-                        : state.score.isEmpty() ? "Bu gezinme güvenlik kontrolüyle değerlendirildi."
-                        : "Risk skoru: " + state.score)
+                .setTitle("PhiShark · " + text(LABELS[state.verdict]))
+                .setMessage(serviceError ? text(R.string.phishark_ui_020) + state.detail
+                        : state.score.isEmpty() ? text(R.string.phishark_ui_021)
+                        : text(R.string.phishark_ui_022) + state.score)
                 .setCancelable(serviceError)
-                .setNegativeButton(serviceError ? "Kapat" : "Güvenliğe dön", (dialog, which) -> {
+                .setNegativeButton(serviceError ? text(R.string.phishark_ui_023) : text(R.string.phishark_ui_024), (dialog, which) -> {
                     if (!serviceError) returnToSafety(contents, state);
                 });
         // Only warnings can be continued. The native block has no override.
-        if (state.verdict == 2) builder.setPositiveButton("Bu gezinme için devam et", (dialog, which) -> {
+        if (state.verdict == 2) builder.setPositiveButton(text(R.string.phishark_ui_025), (dialog, which) -> {
             if (STATES.get(contents) == state) {
                 state.warningAccepted = true;
             }
         });
-        if (serviceError) builder.setPositiveButton("PhiShark hesabı", (dialog, which) -> showAccount(false));
+        if (serviceError) builder.setPositiveButton(text(R.string.phishark_ui_026), (dialog, which) -> showAccount(false));
         AlertDialog created = builder.create();
         created.setOnDismissListener(dialog -> {
             if (verdictDialog == created) { verdictDialog = null; dialogContents = null; }
@@ -272,17 +275,17 @@ public final class PhiSharkBridge {
         Activity owner = activity.get(); if (owner == null || owner.isFinishing()) return;
         State state = STATES.get(current());
         new AlertDialog.Builder(owner).setTitle("PhiShark Browser")
-                .setMessage("Durum: " + statusLabel(state)
-                        + (state == null ? "" : "\nSonuç aşaması: "
-                                + (state.deepPending || state.deep ? "İçerik (deep)" : "URL (preflight)"))
-                        + (state == null || state.score.isEmpty() ? "" : "\nRisk skoru: " + state.score)
+                .setMessage(text(R.string.phishark_ui_027) + statusLabel(state)
+                        + (state == null ? "" : text(R.string.phishark_ui_028)
+                                + (state.deepPending || state.deep ? text(R.string.phishark_ui_029) : "URL (preflight)"))
+                        + (state == null || state.score.isEmpty() ? "" : text(R.string.phishark_ui_030) + state.score)
                         + (state == null || state.detail.isEmpty() ? "" : "\n" + state.detail)
                         + (state == null ? "" : "\n\n" + state.requestCounts)
                         + "\n\n" + BrowserAccount.status()
-                        + "\n\nGizli modda yalnız URL kontrolü yapılır.")
-                .setPositiveButton("Hesap ve koruma", (dialog, which) -> showAccount(false))
-                .setNeutralButton("Hakkında", (dialog, which) -> showAbout())
-                .setNegativeButton("Kapat", null).show();
+                        + text(R.string.phishark_ui_031))
+                .setPositiveButton(text(R.string.phishark_ui_032), (dialog, which) -> showAccount(false))
+                .setNeutralButton(text(R.string.phishark_ui_033), (dialog, which) -> showAbout())
+                .setNegativeButton(text(R.string.phishark_ui_023), null).show();
     }
 
     private void accountChanged() {
@@ -295,13 +298,13 @@ public final class PhiSharkBridge {
     private void showAbout() {
         Activity owner = activity.get(); if (owner == null || owner.isFinishing()) return;
         new AlertDialog.Builder(owner).setTitle("PhiShark Browser")
-                .setMessage("PhiShark hesap koruması ve gizli modda URL kontrolü.\n\n"
-                        + "Açık kaynak altyapı: Chromium ve Cromite. İlgili lisanslar ve üçüncü taraf bildirimleri korunur.")
-                .setPositiveButton("Açık kaynak lisansları", (dialog, which) -> {
+                .setMessage(text(R.string.phishark_ui_034)
+                        + text(R.string.phishark_ui_035))
+                .setPositiveButton(text(R.string.phishark_ui_036), (dialog, which) -> {
                     WebContents contents = current();
                     if (contents != null) contents.getNavigationController().loadUrl(new LoadUrlParams("chrome://credits/"));
-                }).setNeutralButton("Geliştirici ayarları", (dialog, which) -> showSettings())
-                .setNegativeButton("Kapat", null).show();
+                }).setNeutralButton(text(R.string.phishark_ui_037), (dialog, which) -> showSettings())
+                .setNegativeButton(text(R.string.phishark_ui_023), null).show();
     }
 
     private void showAccount(boolean firstRun) {
@@ -317,19 +320,19 @@ public final class PhiSharkBridge {
         message.setPadding(0, dp(16), 0, dp(16));
         boolean connected = BrowserAccount.signedIn();
         accountDialogConnected = connected;
-        message.setText(connected ? "Hesabınız bağlı. Oturumunuz bu cihazda güvenli biçimde hatırlanır."
-                : "PhiShark hesabınızla giriş yapın. API anahtarı kopyalamadan korumayı hesabınıza bağlayın; sonraki açılışlarda oturumunuz hatırlansın.");
+        message.setText(connected ? text(R.string.phishark_ui_038)
+                : text(R.string.phishark_ui_039));
         form.addView(message);
         CheckBox consent = new CheckBox(owner); consent.setTextColor(Color.WHITE);
-        consent.setText("Normal modda tam URL'nin query dahil ve temizlenmiş sayfa içeriğinin analiz için PhiShark'a gönderilmesine izin veriyorum. Gizli modda yalnız URL gönderilir.");
+        consent.setText(text(R.string.phishark_ui_040));
         consent.setChecked(hasDeepConsent());
         if (connected) form.addView(consent);
         AlertDialog.Builder builder = new AlertDialog.Builder(owner).setView(form).setCancelable(!firstRun)
-                .setPositiveButton(connected ? "Tarayıcıya devam et" : "PhiShark'a giriş yap", null)
-                .setNegativeButton(firstRun ? "Şimdilik atla" : "Kapat", (dialog, which) -> {
+                .setPositiveButton(connected ? text(R.string.phishark_ui_041) : text(R.string.phishark_ui_042), null)
+                .setNegativeButton(firstRun ? text(R.string.phishark_ui_043) : text(R.string.phishark_ui_023), (dialog, which) -> {
                     prefs().edit().putBoolean("phishark.onboarded.v1", true).apply();
                 });
-        if (connected) builder.setNeutralButton("Hesaptan çık", (dialog, which) -> BrowserAccount.logout());
+        if (connected) builder.setNeutralButton(text(R.string.phishark_ui_044), (dialog, which) -> BrowserAccount.logout());
         AlertDialog created = builder.create(); accountDialog = created;
         created.setOnDismissListener(dialog -> { if (accountDialog == created) accountDialog = null; });
         created.setOnShowListener(dialog -> created.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
@@ -338,7 +341,7 @@ public final class PhiSharkBridge {
                         .putLong(VERSION, getSettingsVersion() + 1).apply(); created.dismiss();
             } else {
                 created.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
-                message.setText("PhiShark giriş sayfası açılıyor…");
+                message.setText(text(R.string.phishark_ui_045));
                 BrowserAccount.start(owner, result -> {
                     if (!created.isShowing()) return;
                     message.setText(result); created.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
@@ -352,21 +355,21 @@ public final class PhiSharkBridge {
         Activity owner = activity.get(); if (owner == null || owner.isFinishing()) return;
         LinearLayout form = new LinearLayout(owner); form.setOrientation(LinearLayout.VERTICAL);
         form.setPadding(24, 16, 24, 16);
-        EditText base = new EditText(owner); base.setHint("PhiShark API adresi (HTTPS)");
+        EditText base = new EditText(owner); base.setHint(text(R.string.phishark_ui_046));
         base.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         base.setText(getApiBase()); form.addView(base);
-        EditText key = new EditText(owner); key.setHint("Kişisel API anahtarı (değiştirmek için gir)");
+        EditText key = new EditText(owner); key.setHint(text(R.string.phishark_ui_047));
         key.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
         form.addView(key);
         CheckBox consent = new CheckBox(owner);
-        consent.setText("Normal modda tam URL'nin query dahil ve temizlenmiş sayfa içeriğinin PhiShark'a gönderilmesine izin veriyorum. Gizli mod yalnız URL gönderir.");
+        consent.setText(text(R.string.phishark_ui_048));
         consent.setChecked(hasDeepConsent()); form.addView(consent);
-        AlertDialog dialog = new AlertDialog.Builder(owner).setTitle("PhiShark API kurulumu")
-                .setView(form).setPositiveButton("Kaydet", null).setNegativeButton("İptal", null)
-                .setNeutralButton("Anahtarı sil", (d, which) -> {
+        AlertDialog dialog = new AlertDialog.Builder(owner).setTitle(text(R.string.phishark_ui_049))
+                .setView(form).setPositiveButton(text(R.string.phishark_ui_050), null).setNegativeButton(text(R.string.phishark_ui_051), null)
+                .setNeutralButton(text(R.string.phishark_ui_052), (d, which) -> {
                     try { vault().clear(); prefs().edit().remove(CONSENT)
                             .putLong(VERSION, getSettingsVersion() + 1).apply(); }
-                    catch (Exception ignored) { new AlertDialog.Builder(owner).setMessage("Anahtar silinemedi.").setPositiveButton("Kapat", null).show(); }
+                    catch (Exception ignored) { new AlertDialog.Builder(owner).setMessage(text(R.string.phishark_ui_053)).setPositiveButton(text(R.string.phishark_ui_023), null).show(); }
                 }).create();
         dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
             byte[] bytes = null;
@@ -375,7 +378,7 @@ public final class PhiSharkBridge {
                 if (uri.getHost() == null || uri.getUserInfo() != null || uri.getQuery() != null
                         || uri.getFragment() != null || (!"https".equals(uri.getScheme())
                         && !("http".equals(uri.getScheme()) && "127.0.0.1".equals(uri.getHost())))) {
-                    base.setError("Geçerli bir HTTPS API adresi girin"); return;
+                    base.setError(text(R.string.phishark_ui_054)); return;
                 }
                 if (key.length() > 0) {
                     bytes = key.getText().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
@@ -385,7 +388,7 @@ public final class PhiSharkBridge {
                 prefs().edit().putString(BASE, uri.toString()).putBoolean(CONSENT, consent.isChecked())
                         .putLong(VERSION, getSettingsVersion() + 1).apply();
                 key.setText(""); dialog.dismiss();
-            } catch (Exception ignored) { key.setError("Ayarlar kaydedilemedi"); }
+            } catch (Exception ignored) { key.setError(text(R.string.phishark_ui_055)); }
             finally { if (bytes != null) Arrays.fill(bytes, (byte) 0); }
         }));
         dialog.show();

@@ -119,7 +119,7 @@ def main():
     edit('components/ntp_tiles/resources/default_popular_sites.json', lambda text:
         json.dumps([
             {'title': 'PhiShark', 'url': 'https://phishark.io/'},
-            {'title': 'PhiShark hesabım', 'url': 'https://app.phishark.io/'},
+            {'title': 'My PhiShark account', 'url': 'https://app.phishark.io/'},
         ], indent=2) + '\n')
 
     def core(body):
@@ -235,11 +235,7 @@ def main():
             text = replace_once(text, f'buildPrivacyPolicyLink("{number}", R.string.privacy_link{number})',
                 f'buildPrivacyPolicyLink("{number}", R.string.phishark_{name}_url)', 'PhiShark legal link')
         return replace_once(text, '        String tosString = getString(R.string.bromite_fre_footer_privacy_policy);',
-            '        String tosString = "PhiShark Browser’a hoş geldiniz. "\n'
-            '                + "İlk açılışta PhiShark hesabınıza giriş yaparak korumayı bağlayın. "\n'
-            '                + "Normal modda içerik analizi ayrıca onay ister; gizli mod yalnız URL kontrolü yapar.\\n\\n"\n'
-            '                + "<PRIVACY_LINK1>PhiShark Kullanım Koşulları</PRIVACY_LINK1> · "\n'
-            '                + "<PRIVACY_LINK2>PhiShark Gizlilik Politikası</PRIVACY_LINK2>";',
+            '        String tosString = getString(R.string.phishark_welcome_body);',
             'welcome privacy text')
     edit('chrome/android/java/src/org/chromium/chrome/browser/firstrun/ToSAndUMAFirstRunFragment.java', first_run)
     edit('chrome/android/java/src/org/chromium/chrome/browser/omaha/CromiteUpdateStatusProvider.java',
