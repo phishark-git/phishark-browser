@@ -1,0 +1,5 @@
+/android/scripts/*.sh text eol=lf
+/ios/scripts/*.sh text eol=lf
+/scripts/*.mjs text eol=lf
+/shared/security-contract/*.mjs text eol=lf
+/tests/*.mjs text eol=lf

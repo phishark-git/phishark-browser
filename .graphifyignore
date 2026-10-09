@@ -1,0 +1,4 @@
+android/upstream/
+ios/upstream/
+.build/
+LICENSES/

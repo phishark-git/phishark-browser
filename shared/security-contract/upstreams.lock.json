@@ -1,0 +1,21 @@
+{
+  "checked_at": "2026-10-09",
+  "android": {
+    "repository": "https://github.com/uazo/cromite.git",
+    "tag": "v153.0.8010.37-11507ac1061b5ea227806f5e84db5a57df6ccf6a",
+    "commit": "49c23e54e61a84486bb6581cccf6d51ada75999b",
+    "imported_tree": "c7d0c9d98d299321a5b3cf89b1d8f2cd23c22dd1",
+    "chromium_version": "153.0.8010.37",
+    "prefix": "android/upstream"
+  },
+  "ios": {
+    "repository": "https://github.com/mozilla-mobile/firefox-ios.git",
+    "tag": "firefox-v157.1",
+    "commit": "fbb79fe39c9c53c4da3c4ddb98b14ecf804791e4",
+    "imported_tree": "417d589d7a347ea03a629244914a2325df192fc6",
+    "prefix": "ios/upstream",
+    "xcode": "26.5",
+    "swift": "6.2",
+    "minimum_ios": "15.0"
+  }
+}

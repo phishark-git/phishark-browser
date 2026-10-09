@@ -1,0 +1,464 @@
+[
+  {
+    "name": "preflight score -1",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": -1
+      }
+    },
+    "expected": "unverified"
+  },
+  {
+    "name": "preflight score 0",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 0
+      }
+    },
+    "expected": "safe"
+  },
+  {
+    "name": "preflight score 10",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 10
+      }
+    },
+    "expected": "safe"
+  },
+  {
+    "name": "preflight score 30",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 30
+      }
+    },
+    "expected": "safe"
+  },
+  {
+    "name": "preflight score 31",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 31
+      }
+    },
+    "expected": "warning"
+  },
+  {
+    "name": "preflight score 60",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 60
+      }
+    },
+    "expected": "warning"
+  },
+  {
+    "name": "preflight score 61",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 61
+      }
+    },
+    "expected": "warning"
+  },
+  {
+    "name": "preflight score 85",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 85
+      }
+    },
+    "expected": "warning"
+  },
+  {
+    "name": "preflight score 86",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 86
+      }
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "preflight score 100",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 100
+      }
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "preflight score 101",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 101
+      }
+    },
+    "expected": "unverified"
+  },
+  {
+    "name": "preflight definitive unsafe",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "unsafe",
+      "risk_score": 10
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "preflight definitive malicious",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "malicious",
+      "risk_score": 10
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "preflight definitive blocked",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "blocked",
+      "risk_score": 10
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "preflight definitive phishing",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "phishing",
+      "risk_score": 10
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "preflight definitive dangerous",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "dangerous",
+      "risk_score": 10
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "browser_deep_scan score -1",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": -1
+      }
+    },
+    "expected": "unverified"
+  },
+  {
+    "name": "browser_deep_scan score 0",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 0
+      }
+    },
+    "expected": "safe"
+  },
+  {
+    "name": "browser_deep_scan score 10",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 10
+      }
+    },
+    "expected": "safe"
+  },
+  {
+    "name": "browser_deep_scan score 30",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 30
+      }
+    },
+    "expected": "safe"
+  },
+  {
+    "name": "browser_deep_scan score 31",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 31
+      }
+    },
+    "expected": "warning"
+  },
+  {
+    "name": "browser_deep_scan score 60",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 60
+      }
+    },
+    "expected": "warning"
+  },
+  {
+    "name": "browser_deep_scan score 61",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 61
+      }
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "browser_deep_scan score 85",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 85
+      }
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "browser_deep_scan score 86",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 86
+      }
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "browser_deep_scan score 100",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 100
+      }
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "browser_deep_scan score 101",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "unknown",
+      "risk_calculation": {
+        "risk_score": 101
+      }
+    },
+    "expected": "unverified"
+  },
+  {
+    "name": "browser_deep_scan definitive unsafe",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "unsafe",
+      "risk_score": 10
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "browser_deep_scan definitive malicious",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "malicious",
+      "risk_score": 10
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "browser_deep_scan definitive blocked",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "blocked",
+      "risk_score": 10
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "browser_deep_scan definitive phishing",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "phishing",
+      "risk_score": 10
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "browser_deep_scan definitive dangerous",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "verdict": "dangerous",
+      "risk_score": 10
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "gatekeeper_malicious:blocklist",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "risk_score": 0,
+      "short_circuit_reason": "gatekeeper_malicious:blocklist"
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "prompt_injection_detected",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "risk_score": 0,
+      "short_circuit_reason": "prompt_injection_detected"
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "prompt_injection_suspected",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "risk_score": 0,
+      "short_circuit_reason": "prompt_injection_suspected"
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "mismatched profile",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "risk_score": 0
+    },
+    "expected": "unverified"
+  },
+  {
+    "name": "missing score",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight"
+    },
+    "expected": "unverified"
+  },
+  {
+    "name": "numeric string rejected",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "risk_score": "0"
+    },
+    "expected": "unverified"
+  },
+  {
+    "name": "definitive threat survives missing score",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "verdict": "malicious"
+    },
+    "expected": "blocked"
+  },
+  {
+    "name": "failed is not safe",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "failed",
+      "risk_score": 0
+    },
+    "expected": "unverified"
+  },
+  {
+    "name": "degraded prompt service cannot be declared safe",
+    "profile": "browser_deep_scan",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "risk_score": 0,
+      "analysis_degraded": true,
+      "incomplete_modules": [
+        "prompt-injection-analysis-service"
+      ]
+    },
+    "expected": "unverified"
+  },
+  {
+    "name": "normalized definitive verdict",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "risk_score": 0,
+      "verdict": " Malicious "
+    },
+    "expected": "blocked"
+  }
+]
