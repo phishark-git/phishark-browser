@@ -56,12 +56,14 @@ public final class PhiSharkBridge {
         final String score;
         final String lastSafe;
         final boolean deep;
+        final String detail;
         boolean warningAccepted;
         boolean serviceErrorShown;
         boolean deepPending;
-        State(int verdict, long generation, String score, String lastSafe, boolean deep) {
+        State(int verdict, long generation, String score, String lastSafe, boolean deep, String detail) {
             this.verdict = verdict; this.generation = generation;
             this.score = score; this.lastSafe = lastSafe; this.deep = deep;
+            this.detail = detail;
         }
     }
 
@@ -122,11 +124,11 @@ public final class PhiSharkBridge {
     @CalledByNative private static long getSettingsVersion() { return prefs().getLong(VERSION, 0); }
 
     @CalledByNative private static void updateState(@JniType("content::WebContents*") WebContents contents, int verdict,
-            long generation, String score, String lastSafe, boolean deep) {
+            long generation, String score, String lastSafe, boolean deep, String detail) {
         if (verdict < 0 || verdict >= LABELS.length || contents == null) return;
         State previous = STATES.get(contents);
         if (previous != null && generation < previous.generation) return;
-        STATES.put(contents, new State(verdict, generation, score, lastSafe, deep));
+        STATES.put(contents, new State(verdict, generation, score, lastSafe, deep, detail));
         for (PhiSharkBridge window : WINDOWS.values()) window.refresh();
     }
 
@@ -147,7 +149,7 @@ public final class PhiSharkBridge {
         String label = "PhiShark · " + (state != null && state.deepPending
                 ? (state.verdict == 2 ? "Uyarı · " : "") + "Derin analiz sürüyor"
                 : state != null && state.verdict == 1 && !state.deep
-                ? "URL kontrolü: düşük risk" : LABELS[state == null ? 4 : state.verdict]);
+                ? "URL kontrolü: düşük risk" : state == null ? "Sayfa açın" : LABELS[state.verdict]);
         badge.setText(label);
         int accent = state != null && state.verdict == 3 ? Color.rgb(255, 117, 117)
                 : state != null && (state.verdict == 2 || state.verdict == 5) ? Color.rgb(255, 202, 91)
@@ -196,7 +198,7 @@ public final class PhiSharkBridge {
         boolean serviceError = state.verdict == 5;
         AlertDialog.Builder builder = new AlertDialog.Builder(owner)
                 .setTitle("PhiShark · " + LABELS[state.verdict])
-                .setMessage(serviceError ? "PhiShark hesabı veya koruma hizmeti doğrulanamadı. Bu sayfa güvenli olarak onaylanmadı."
+                .setMessage(serviceError ? "PhiShark hesabı veya koruma hizmeti doğrulanamadı. Bu sayfa güvenli olarak onaylanmadı.\n" + state.detail
                         : state.score.isEmpty() ? "Bu gezinme güvenlik kontrolüyle değerlendirildi."
                         : "Risk skoru: " + state.score)
                 .setCancelable(serviceError)
@@ -223,8 +225,9 @@ public final class PhiSharkBridge {
         State state = STATES.get(current());
         new AlertDialog.Builder(owner).setTitle("PhiShark Browser")
                 .setMessage("Durum: " + (state != null && state.verdict == 1 && !state.deep
-                        ? "URL kontrolü: düşük risk" : LABELS[state == null ? 4 : state.verdict])
+                        ? "URL kontrolü: düşük risk" : state == null ? "Henüz bir web sayfası kontrol edilmedi" : LABELS[state.verdict])
                         + (state == null || state.score.isEmpty() ? "" : "\nRisk skoru: " + state.score)
+                        + (state == null || state.detail.isEmpty() ? "" : "\n" + state.detail)
                         + "\n\n" + BrowserAccount.status()
                         + "\n\nGizli modda yalnız URL kontrolü yapılır.")
                 .setPositiveButton("Hesap ve koruma", (dialog, which) -> showAccount(false))

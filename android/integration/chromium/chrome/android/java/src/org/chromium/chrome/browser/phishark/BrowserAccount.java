@@ -58,7 +58,10 @@ public final class BrowserAccount {
     private static synchronized void load() {
         if (loaded) return;
         loaded = true;
-        try { session = read("session"); } catch (Exception ignored) { status = "Oturum okunamadı; yeniden giriş yapın"; }
+        try {
+            session = read("session");
+            if (session != null && enabled()) status = "PhiShark hesabınız bağlı";
+        } catch (Exception ignored) { status = "Oturum okunamadı; yeniden giriş yapın"; }
     }
     public static synchronized boolean enabled() { return prefs().getBoolean(MODE, false); }
     public static synchronized boolean signedIn() { load(); return enabled() && session != null; }

@@ -11,6 +11,26 @@ packages and launched the locally built x64 baseline; actual PhiShark navigation
 preflight/deep blocking, return-to-safety and private URL-only smoke tests passed
 against the corrected integrated x64 APK. The wider acceptance suite remains pending.
 
+## Leaving fixture mode before account acceptance
+
+Fixture-capable APKs enter synthetic mode only when the Android command-line file
+contains `--phishark-local-fixtures`. In this mode public targets are deliberately
+not scanned, and only loopback fixtures use the synthetic credential/consent.
+Installing a newer APK with `adb install -r` does **not** clear this command-line
+file. Before live account acceptance, remove only this switch from
+`/data/local/tmp/chrome-command-line`, preserve unrelated switches, verify its
+absence, and restart the app process. Do not clear app data or the account vault.
+Do not print the whole command line or any stored credentials while diagnosing.
+
+On 2026-10-09 the emulator still had this flag after the account build was
+installed. A signed-in public page therefore showed unverified before an API
+request could run. The flag was removed and the app restarted without clearing
+data. A subsequent reload reached a low-risk URL result. Later unverified
+states require their own diagnosis; a successful preflight is not proof of a
+successful deep scan. The native panel now includes fixed, credential-free
+failure details instead of conflating local fixture exclusions, connection
+validation, capture failures, HTTP errors and partial analysis.
+
 Open `http://127.0.0.1:8765/`. Pages cover score/prompt/degraded/error scenarios,
 two-hop redirects, popup/new tab, same-document history and anchors, downloads,
 file inputs, scroll-offset masking, editable text, a frame and shadow fields.
