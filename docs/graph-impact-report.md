@@ -42,6 +42,21 @@ feature flags or deployment state.
 
 ## Refresh evidence and limitations
 
+The account-pairing implementation refreshed backend and browser repo-local code
+graphs plus the dashboard worktree graph, rebuilt backend/browser/clients
+components, then rebuilt the workspace: 13,035 nodes, 28,721 edges and zero
+aggregate dangling endpoints. The browser component has 489 nodes and drops 146
+external/library AST endpoints. The original account query
+`ExtensionAuthService CreateBrowserScan RefreshAccessToken PhiSharkBridge`
+returned 209 nodes; the original profile/persistence/callback query returned 593.
+Both displayed results were budget-truncated and checked against current source.
+The clients rebuild drops an old semantic hyperedge because this refresh is
+code-only. Document semantics, other-branch snapshots and external Chromium
+remain incomplete. New account consumers are the dashboard pairing route and
+native browser; old extension/mobile routes retain their contracts. Backend
+must precede dashboard and native rollout. Firestore revocation-collection
+permissions, live callback behavior and active flags remain unknown.
+
 The subsequent login/branding review refreshed the browser code/component and
 workspace graphs: 390 browser nodes, 13,002 workspace nodes, 28,695 workspace
 edges, zero aggregate dangling endpoints. The browser component drops 113

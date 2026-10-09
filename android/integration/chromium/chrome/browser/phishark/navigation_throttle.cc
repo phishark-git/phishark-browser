@@ -231,7 +231,7 @@ class TabProtection final : public content::WebContentsObserver,
   void Start(Profile profile, std::optional<base::DictValue> evidence, Completion completion) {
     auto version = Java_PhiSharkBridge_getSettingsVersion(base::android::AttachCurrentThread());
     if (version != settings_version_) { cache_.clear(); settings_version_ = version; }
-    profile_ = profile; completion_ = std::move(completion); attempt_ = 0;
+    profile_ = profile; completion_ = std::move(completion); attempt_ = 0; auth_retried_ = false;
     base::DictValue body; body.Set("target", target_.spec());
     if (evidence) body.Set("web_evidence", std::move(*evidence));
     body_ = base::WriteJson(body).value_or("");
@@ -247,6 +247,9 @@ class TabProtection final : public content::WebContentsObserver,
   }
   void Send() {
     JNIEnv* env = base::android::AttachCurrentThread();
+    if (base::TimeTicks::Now() >= deadline_) { Unavailable(false); return; }
+    if (settings_version_ != Java_PhiSharkBridge_getSettingsVersion(env)) { cache_.clear(); Unavailable(true); return; }
+    const bool account = !UseLocalFixtures() && Java_PhiSharkBridge_usesAccount(env);
     if (profile_ == Profile::kDeep) {
       session_.SetConsent(Java_PhiSharkBridge_hasDeepConsent(env) || UseLocalFixtures());
       if (!session_.CanCapture()) { Unavailable(false); return; }
@@ -273,7 +276,11 @@ class TabProtection final : public content::WebContentsObserver,
       const std::string fixture_key = "fixture-only";
       key.assign(fixture_key.begin(), fixture_key.end());
     }
-    const bool key_valid = !key.empty() && key.size() <= 4096
+    if (account && key.empty() && Java_PhiSharkBridge_isAccountRefreshing(env)) {
+      base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(FROM_HERE,
+          base::BindOnce(&TabProtection::Send, weak_factory_.GetWeakPtr()), base::Milliseconds(100)); return;
+    }
+    const bool key_valid = !key.empty() && key.size() <= (account ? 12000u : 4096u)
         && std::all_of(key.begin(), key.end(), [](uint8_t c) { return c >= 33 && c <= 126; });
     if (!endpoint_valid || !key_valid || body_.empty()) {
       std::fill(key.begin(), key.end(), 0);
@@ -284,7 +291,8 @@ class TabProtection final : public content::WebContentsObserver,
     request->method = "POST"; request->credentials_mode = network::mojom::CredentialsMode::kOmit;
     request->redirect_mode = network::mojom::RedirectMode::kError;
     request->load_flags = net::LOAD_DISABLE_CACHE | net::LOAD_BYPASS_CACHE;
-    request->headers.SetHeader("X-API-Key", std::string(key.begin(), key.end()));
+    if (account) request->headers.SetHeader("Authorization", "Bearer " + std::string(key.begin(), key.end()));
+    else request->headers.SetHeader("X-API-Key", std::string(key.begin(), key.end()));
     std::fill(key.begin(), key.end(), 0);
     request->headers.SetHeader("Content-Type", "application/json");
     loader_ = network::SimpleURLLoader::Create(std::move(request), kTraffic);
@@ -312,6 +320,13 @@ class TabProtection final : public content::WebContentsObserver,
       retry = loader_->ResponseInfo()->headers->GetNormalizedHeader("retry-after").value_or("");
     }
     const int net_error = loader_->NetError(); loader_.reset();
+    if (status == 401 && !auth_retried_ && !UseLocalFixtures()
+        && Java_PhiSharkBridge_usesAccount(base::android::AttachCurrentThread())
+        && base::TimeTicks::Now() < deadline_) {
+      auth_retried_ = true;
+      Java_PhiSharkBridge_refreshAccount(base::android::AttachCurrentThread());
+      Send(); return;
+    }
     // Authentication/setup failures remain service errors even with a non-JSON
     // gateway response. Capacity retries also cover empty response bodies.
     const bool transient_status = status == 0 || status == 429 || status == 500
@@ -402,6 +417,7 @@ class TabProtection final : public content::WebContentsObserver,
   Completion completion_;
   std::string body_, cache_key_;
   int attempt_ = 0;
+  bool auth_retried_ = false;
   int64_t settings_version_ = -1;
   base::TimeTicks deadline_;
   std::unique_ptr<network::SimpleURLLoader> loader_;

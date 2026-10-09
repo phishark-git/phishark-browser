@@ -3,12 +3,14 @@ import Foundation
 import Security
 
 public struct APIKeyVault {
-    public init() {}
+    public enum Purpose: String { case apiKey = "personal-api-key.v1", session = "session.v1", pending = "pending.v1" }
+    private let purpose: Purpose
+    public init(purpose: Purpose = .apiKey) { self.purpose = purpose }
     private var identity: [String: Any] { [kSecClass as String: kSecClassGenericPassword,
-        kSecAttrService as String: "io.phishark.browser", kSecAttrAccount as String: "personal-api-key.v1",
+        kSecAttrService as String: "io.phishark.browser", kSecAttrAccount as String: purpose.rawValue,
         kSecAttrSynchronizable as String: false] }
     public func save(_ key: Data) throws {
-        guard !key.isEmpty, key.count <= 4096 else { throw VaultError.invalidKey }
+        guard !key.isEmpty, key.count <= (purpose == .apiKey ? 4096 : 16384) else { throw VaultError.invalidKey }
         let status = SecItemUpdate(identity as CFDictionary, [kSecValueData as String: key] as CFDictionary)
         if status == errSecItemNotFound {
             var item = identity; item[kSecValueData as String] = key

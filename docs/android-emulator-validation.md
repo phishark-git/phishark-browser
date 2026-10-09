@@ -23,6 +23,14 @@ not a PhiShark release key. Package: `org.cromite.cromite`, version:
 
 ## Windows emulator comparison
 
+The integrated, fixture-disabled ARM64 build subsequently completed in 44m38.20s
+(9,431 incremental steps). This is the pre-account overlay (`d1e55122`), signed with
+the development key, package `io.phishark.browser`; physical launch is unverified.
+Immutable artifacts are in the build workspace's `artifacts/phishark-arm64-pre-account`:
+APK SHA-256 `54a16810e5fef6884b3c97702735788bf4d0ea5858e680c9d5d594c06b6c3f41`,
+AAB SHA-256 `0b0918c2f184b805fbe5c7cee5fe7abdf752bde4a1ebfca9eaa0adddd972f387`.
+They do not include the subsequent account onboarding or complete brand update.
+
 The task-local Android Emulator 37.3.3 runs the official Android 15/API 35 Google
 APIs x86_64 r09 image on WHPX. The emulator advertises ARM64 translation.
 Only synthetic fixture data is used; the production PhiShark API is not called.
@@ -125,19 +133,20 @@ The corrected x64 fixture APK and AAB built successfully (final incremental buil
 The private-tab check deliberately does not establish a deep verdict. These few
 fixture checks do not certify real-provider detection, consent revocation,
 screenshots, redirect/restore/BFCache coverage, cross-tab coalescing, all error
-paths or everyday browser behavior. ARM64 integration build is running; physical
-Android validation and iOS/Mac validation remain pending. Some upstream brand
-strings and the old first-run update checkbox remain to be cleaned up.
+paths or everyday browser behavior. ARM64 integration build has since passed
+with the pre-account overlay; physical Android validation and iOS/Mac validation
+remain pending. The subsequent account/branding overlay replaces product labels
+and hides the upstream update checkbox; its validation is recorded separately.
 
 ![Native preflight block](images/android-preflight-block.png)
 
 ![Native post-load deep block](images/android-deep-block.png)
 
 The actual `ApiKeyVault` source also passed a separate Android instrumentation
-test on this emulator: 16 assertions across two different processes, including
+test on this emulator: initially 16, now 23 assertions across two different processes, including
 encrypted persistence after process restart, absence of plaintext in the stored
 file, fresh AES-GCM nonces, tamper rejection, invalid format rejection, key size
-limits and deletion of both file and Keystore alias. The test-only package
+limits, separate account/pending/key storage purposes and deletion of both file and Keystore alias. The test-only package
 `io.phishark.browser.vaulttests` has no Internet permission and uses synthetic
 data. This verifies the storage component, not the integrated browser, and does
 not establish hardware-backed Keystore behavior on a physical device.

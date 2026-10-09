@@ -99,12 +99,19 @@ def main():
     def android_gn(text):
         text = replace_once(text, '    sources = chrome_java_sources\n',
             '    sources = chrome_java_sources\n    sources += [\n'
-            f'      "{java}",\n      "{updater}",\n      "{vault}",\n    ]\n', 'chrome_java sources')
+            f'      "{java}",\n      "{updater}",\n      "{vault}",\n'
+            '      "java/src/io/phishark/browser/security/BrowserOAuth.java",\n'
+            '      "java/src/org/chromium/chrome/browser/phishark/BrowserAccount.java",\n'
+            '      "java/src/org/chromium/chrome/browser/phishark/BrowserAccountActivity.java",\n    ]\n', 'chrome_java sources')
         text = gn_target(text, 'generate_jni("chrome_jni_headers")', lambda body:
             replace_once(body, '    sources = [\n',
                 f'    allow_private_called_by_natives = true\n    sources = [\n      "{java}",\n', 'JNI sources'))
         return replace_once(text, '      "java/res_base/drawable/ic_launcher.xml",',
-            '      "java/res_base/drawable/phishark_icon.xml",\n      "java/res_base/drawable/ic_launcher.xml",', 'icon resources')
+            '      "java/res_base/drawable/phishark_icon.xml",\n'
+            '      "java/res_base/drawable-nodpi/phishark_mark.png",\n'
+            '      "java/res_base/drawable-nodpi/phishark_wordmark.png",\n'
+            '      "java/res_base/values/phishark.xml",\n'
+            '      "java/res_base/drawable/ic_launcher.xml",', 'icon resources')
 
     edit('chrome/android/BUILD.gn', android_gn)
 
@@ -147,7 +154,25 @@ def main():
             '    protected void onDestroyInternal() {',
             f'    protected void onDestroyInternal() {{\n        {bridge}.uninstall(this);', 'activity teardown'))
     edit('chrome/android/java/AndroidManifest.xml', lambda text:
-        replace_once(text, 'android:label="Cromite"', 'android:label="PhiShark Browser"', 'application label'))
+        replace_once(replace_once(replace_once(text,
+            'android:label="Cromite"', 'android:label="PhiShark Browser"', 'application label'),
+            '        {% block extra_application_definitions %}',
+            '<activity android:name="org.chromium.chrome.browser.phishark.BrowserAccountActivity" '
+            'android:exported="true" android:excludeFromRecents="true">\n'
+            '  <intent-filter><action android:name="android.intent.action.VIEW"/>\n'
+            '    <category android:name="android.intent.category.DEFAULT"/>\n'
+            '    <category android:name="android.intent.category.BROWSABLE"/>\n'
+            '    <data android:scheme="io.phishark.browser"/>\n'
+            '  </intent-filter>\n</activity>\n        {% block extra_application_definitions %}', 'native account callback'),
+            '      <queries>', '      <queries>\n'
+            '        <intent><action android:name="android.intent.action.VIEW"/>'
+            '<category android:name="android.intent.category.BROWSABLE"/>'
+            '<data android:scheme="https"/></intent>', 'external browser visibility'))
+    edit('tools/grit/grit/grd_reader.py', lambda text:
+        replace_once(text, '    return content\n',
+            '    from grit.phishark_brand import brand_message\n'
+            '    message_name = next((node.attrs.get("name", "") for node in reversed(self.stack) if node.name == "message"), "")\n'
+            '    return brand_message(content_orig, content, message_name)\n', 'product text branding'))
     # Cromite denies browser-process traffic unless its exact annotation has an
     # entry and an allow rule. Keep default-deny and all other rules unchanged.
     annotation = 'phishark_ephemeral_browser_analysis'
@@ -180,12 +205,15 @@ def main():
         for number in (3, 4):
             text = replace_once(text, f'        spans.add(buildPrivacyPolicyLink("{number}", R.string.privacy_link{number}));',
                 '', 'unused updater privacy link')
+        for number, name in ((1, 'terms'), (2, 'privacy')):
+            text = replace_once(text, f'buildPrivacyPolicyLink("{number}", R.string.privacy_link{number})',
+                f'buildPrivacyPolicyLink("{number}", R.string.phishark_{name}_url)', 'PhiShark legal link')
         return replace_once(text, '        String tosString = getString(R.string.bromite_fre_footer_privacy_policy);',
-            '        String tosString = "PhiShark Browser, Chromium ve Cromite üzerine kuruludur. "\n'
-            '                + "Koruma için kişisel API anahtarınızı güvenlik panelinden ekleyin. "\n'
+            '        String tosString = "PhiShark Browser’a hoş geldiniz. "\n'
+            '                + "İlk açılışta PhiShark hesabınıza giriş yaparak korumayı bağlayın. "\n'
             '                + "Normal modda içerik analizi ayrıca onay ister; gizli mod yalnız URL kontrolü yapar.\\n\\n"\n'
-            '                + "<PRIVACY_LINK1>Otomatik reklam filtresi güncellemeleri</PRIVACY_LINK1>, "\n'
-            '                + "<PRIVACY_LINK2>Cromite gizlilik açıklamasına</PRIVACY_LINK2> tabidir.";',
+            '                + "<PRIVACY_LINK1>PhiShark Kullanım Koşulları</PRIVACY_LINK1> · "\n'
+            '                + "<PRIVACY_LINK2>PhiShark Gizlilik Politikası</PRIVACY_LINK2>";',
             'welcome privacy text')
     edit('chrome/android/java/src/org/chromium/chrome/browser/firstrun/ToSAndUMAFirstRunFragment.java', first_run)
     edit('chrome/android/java/src/org/chromium/chrome/browser/omaha/CromiteUpdateStatusProvider.java',
@@ -193,11 +221,12 @@ def main():
             'super(new org.chromium.chrome.browser.phishark.PhiSharkUpdateController());', 'upstream APK updater'))
     for icon in ('ic_launcher.xml', 'ic_launcher_round.xml'):
         edit('chrome/android/java/res_base/drawable/' + icon, lambda text:
-            re.sub(r'(<(?:foreground|monochrome) android:drawable=")[^"]+', r'\1@drawable/phishark_icon', text))
+            re.sub(r'(<monochrome android:drawable=")[^"]+', r'\1@drawable/phishark_mark',
+                re.sub(r'(<foreground android:drawable=")[^"]+', r'\1@drawable/phishark_icon', text)))
 
     overlay = REPO / 'android/integration/chromium'
     for path in sorted(overlay.rglob('*')):
-        if not path.is_file(): continue
+        if not path.is_file() or '__pycache__' in path.parts or path.suffix == '.pyc': continue
         relative = path.relative_to(overlay).as_posix()
         target = source / relative
         current = target.read_bytes() if target.exists() else None
@@ -207,6 +236,7 @@ def main():
         changes[relative] = (current, None, path.read_bytes())
     shared_sources = {
         'chrome/android/' + vault: 'android/security/java/io/phishark/browser/security/ApiKeyVault.java',
+        'chrome/android/java/src/io/phishark/browser/security/BrowserOAuth.java': 'android/security/java/io/phishark/browser/security/BrowserOAuth.java',
         'chrome/browser/phishark/verdict.h': 'android/security/verdict.h',
         'chrome/browser/phishark/verdict.cc': 'android/security/verdict.cc',
     }

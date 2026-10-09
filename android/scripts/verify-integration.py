@@ -79,6 +79,9 @@ def main():
         subprocess.run([str(javac), '-proc:none', '-cp', ':'.join(map(str, [sdk, *jars])),
             '-d', str(classes), str(bridge),
             str(overlay / 'chrome/android/java/src/org/chromium/chrome/browser/phishark/PhiSharkUpdateController.java'),
+            str(overlay / 'chrome/android/java/src/org/chromium/chrome/browser/phishark/BrowserAccount.java'),
+            str(overlay / 'chrome/android/java/src/org/chromium/chrome/browser/phishark/BrowserAccountActivity.java'),
+            str(repo / 'android/security/java/io/phishark/browser/security/BrowserOAuth.java'),
             str(repo / 'android/security/java/io/phishark/browser/security/ApiKeyVault.java')],
             cwd=source, check=True)
         print('Chromium Java API compatibility compile passed; APK/device tests are separate')

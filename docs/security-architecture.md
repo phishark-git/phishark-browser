@@ -2,7 +2,7 @@
 
 ## Request and decision boundaries
 
-The browser process owns the personal API key and sends HTTPS requests only to `/api/v1/browser/preflight` and `/api/v1/browser/deep`. There is no fallback to history-producing endpoints. The public backend validates `X-API-Key`, preserves numeric quota reservation/refund, and calls the internal `/v2/browser-scans/preflight` or `/v2/browser-scans/deep` with `BROWSER_SCAN_INTERNAL_TOKEN`. This token is server-only; it is not the user's key.
+The browser process owns account credentials (primary onboarding) or a personal API key (developer mode). Analysis uses HTTPS only to `/api/v1/browser/preflight` and `/api/v1/browser/deep`. Separate native PKCE pairing uses `/api/browser/auth/*`, scope `browser:scan` and exact callback `io.phishark.browser:/oauth/callback`. Tokens/verifiers are never exposed to renderers. There is no fallback to history-producing endpoints. The public backend validates a scoped active browser Bearer session or `X-API-Key`, preserves numeric quota reservation/refund, and calls the internal `/v2/browser-scans/preflight` or `/v2/browser-scans/deep` with `BROWSER_SCAN_INTERNAL_TOKEN`. This token is server-only. Account/developer modes cannot send both credentials. Backend and dashboard changes require deployment before live account use.
 
 Orchestrator's request-scoped `Ephemeral` field is non-JSON. Public callers cannot opt ordinary scans out of persistence, and browser callers cannot opt into it. Existing profiles and response fields remain intact. Browser scans skip start metadata, final metadata, completed result/artifact persistence, batch persistence and callbacks. The synchronous owner cancels work and removes transient state/fetcher evidence on completion, failure and cancellation. The persistence gate captures the privacy flag atomically before state can be deleted.
 
@@ -30,7 +30,7 @@ the actual x64 APK passed basic preflight/deep block, return-to-safety and priva
 URL-only emulator checks. C++ policy is tested
 independently. The unmodified ARM64 APK/AAB built but failed emulator launch;
 the local native x64 baseline built and loaded the fixture page. The integrated
-ARM64 PhiShark build is running. Swift awaits Mac compilation. DNS enforcement,
+ARM64 PhiShark APK/AAB built with the pre-account overlay; physical launch remains unverified. Swift awaits Mac compilation. DNS enforcement,
 cross-tab request coalescing, complete address-bar UI and capture pixel masking
 remain incomplete. Partial HTML deep results cannot label a page safe; screenshots
 are omitted. The x64 fixture APK is a runnable prototype; full acceptance is pending.

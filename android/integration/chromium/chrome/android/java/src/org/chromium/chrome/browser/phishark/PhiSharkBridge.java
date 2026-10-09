@@ -15,6 +15,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.ImageView;
 import java.lang.ref.WeakReference;
 import java.net.URI;
 import java.util.Arrays;
@@ -23,6 +24,7 @@ import org.jni_zero.CalledByNative;
 import org.jni_zero.JniType;
 import org.chromium.base.ContextUtils;
 import org.chromium.chrome.browser.ActivityTabProvider;
+import org.chromium.chrome.R;
 import org.chromium.chrome.browser.tab.Tab;
 import org.chromium.content_public.browser.LoadUrlParams;
 import org.chromium.content_public.browser.WebContents;
@@ -45,6 +47,8 @@ public final class PhiSharkBridge {
     private WebContents dialogContents;
     private long dialogGeneration = -1;
     private String lastBadgeLabel = "";
+    private AlertDialog accountDialog;
+    private boolean accountDialogConnected;
 
     private static final class State {
         final int verdict;
@@ -79,6 +83,11 @@ public final class PhiSharkBridge {
             @Override protected void onObservingDifferentTab(Tab tab) { refresh(); }
         };
         refresh();
+        BrowserAccount.setListener(() -> {
+            for (PhiSharkBridge window : WINDOWS.values()) window.accountChanged();
+        });
+        BrowserAccount.credential();
+        if (!prefs().getBoolean("phishark.onboarded.v1", false)) badge.post(() -> showAccount(true));
     }
 
     public static void install(Activity owner, ActivityTabProvider tabs) {
@@ -91,6 +100,7 @@ public final class PhiSharkBridge {
         bridge.tabObserver.destroy();
         bridge.badge.animate().cancel();
         if (bridge.verdictDialog != null) bridge.verdictDialog.dismiss();
+        if (bridge.accountDialog != null) bridge.accountDialog.dismiss();
         if (bridge.badge.getParent() instanceof ViewGroup) {
             ((ViewGroup) bridge.badge.getParent()).removeView(bridge.badge);
         }
@@ -100,10 +110,14 @@ public final class PhiSharkBridge {
     private static SharedPreferences prefs() { return ContextUtils.getAppSharedPreferences(); }
     private static ApiKeyVault vault() { return new ApiKeyVault(ContextUtils.getApplicationContext()); }
 
-    @CalledByNative private static String getApiBase() { return prefs().getString(BASE, ""); }
+    @CalledByNative private static String getApiBase() { return BrowserAccount.enabled() ? BrowserAccount.API : prefs().getString(BASE, BrowserAccount.API); }
     @CalledByNative private static byte[] getApiKey() {
+        if (BrowserAccount.enabled()) return BrowserAccount.credential();
         try { return vault().load(); } catch (Exception ignored) { return null; }
     }
+    @CalledByNative private static boolean usesAccount() { return BrowserAccount.enabled(); }
+    @CalledByNative private static boolean isAccountRefreshing() { return BrowserAccount.isRefreshing(); }
+    @CalledByNative private static void refreshAccount() { BrowserAccount.refresh(true); }
     @CalledByNative private static boolean hasDeepConsent() { return prefs().getBoolean(CONSENT, false); }
     @CalledByNative private static long getSettingsVersion() { return prefs().getLong(VERSION, 0); }
 
@@ -182,7 +196,7 @@ public final class PhiSharkBridge {
         boolean serviceError = state.verdict == 5;
         AlertDialog.Builder builder = new AlertDialog.Builder(owner)
                 .setTitle("PhiShark · " + LABELS[state.verdict])
-                .setMessage(serviceError ? "API kurulumu veya hizmeti doğrulanamadı. Bu URL güvenli olarak onaylanmadı."
+                .setMessage(serviceError ? "PhiShark hesabı veya koruma hizmeti doğrulanamadı. Bu sayfa güvenli olarak onaylanmadı."
                         : state.score.isEmpty() ? "Bu gezinme güvenlik kontrolüyle değerlendirildi."
                         : "Risk skoru: " + state.score)
                 .setCancelable(serviceError)
@@ -195,7 +209,7 @@ public final class PhiSharkBridge {
                 state.warningAccepted = true;
             }
         });
-        if (serviceError) builder.setPositiveButton("API ayarları", (dialog, which) -> showSettings());
+        if (serviceError) builder.setPositiveButton("PhiShark hesabı", (dialog, which) -> showAccount(false));
         AlertDialog created = builder.create();
         created.setOnDismissListener(dialog -> {
             if (verdictDialog == created) { verdictDialog = null; dialogContents = null; }
@@ -211,9 +225,74 @@ public final class PhiSharkBridge {
                 .setMessage("Durum: " + (state != null && state.verdict == 1 && !state.deep
                         ? "URL kontrolü: düşük risk" : LABELS[state == null ? 4 : state.verdict])
                         + (state == null || state.score.isEmpty() ? "" : "\nRisk skoru: " + state.score)
-                        + "\n\nGizli modda yalnız URL kontrolü yapılır. API kurulumunu tamamlamadan koruma etkin değildir.")
-                .setPositiveButton("API ayarları", (dialog, which) -> showSettings())
+                        + "\n\n" + BrowserAccount.status()
+                        + "\n\nGizli modda yalnız URL kontrolü yapılır.")
+                .setPositiveButton("Hesap ve koruma", (dialog, which) -> showAccount(false))
+                .setNeutralButton("Hakkında", (dialog, which) -> showAbout())
                 .setNegativeButton("Kapat", null).show();
+    }
+
+    private void accountChanged() {
+        refresh();
+        if (accountDialog != null && BrowserAccount.signedIn() != accountDialogConnected) {
+            accountDialog.dismiss(); accountDialog = null; showAccount(false);
+        }
+    }
+
+    private void showAbout() {
+        Activity owner = activity.get(); if (owner == null || owner.isFinishing()) return;
+        new AlertDialog.Builder(owner).setTitle("PhiShark Browser")
+                .setMessage("PhiShark hesap koruması ve gizli modda URL kontrolü.\n\n"
+                        + "Açık kaynak altyapı: Chromium ve Cromite. İlgili lisanslar ve üçüncü taraf bildirimleri korunur.")
+                .setPositiveButton("Açık kaynak lisansları", (dialog, which) -> {
+                    WebContents contents = current();
+                    if (contents != null) contents.getNavigationController().loadUrl(new LoadUrlParams("chrome://credits/"));
+                }).setNeutralButton("Geliştirici ayarları", (dialog, which) -> showSettings())
+                .setNegativeButton("Kapat", null).show();
+    }
+
+    private void showAccount(boolean firstRun) {
+        Activity owner = activity.get();
+        if (owner == null || owner.isFinishing() || accountDialog != null) return;
+        LinearLayout form = new LinearLayout(owner); form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(dp(24), dp(20), dp(24), dp(12)); form.setBackgroundColor(0xFF092330);
+        ImageView logo = new ImageView(owner); logo.setImageResource(R.drawable.phishark_icon);
+        logo.setContentDescription("PhiShark"); form.addView(logo, new LinearLayout.LayoutParams(-1, dp(104)));
+        TextView title = new TextView(owner); title.setText("PhiShark Browser"); title.setTextSize(25);
+        title.setTextColor(Color.WHITE); title.setGravity(Gravity.CENTER); form.addView(title);
+        TextView message = new TextView(owner); message.setTextSize(15); message.setTextColor(0xFFD3E9ED);
+        message.setPadding(0, dp(16), 0, dp(16));
+        boolean connected = BrowserAccount.signedIn();
+        accountDialogConnected = connected;
+        message.setText(connected ? "Hesabınız bağlı. Oturumunuz bu cihazda güvenli biçimde hatırlanır."
+                : "PhiShark hesabınızla giriş yapın. API anahtarı kopyalamadan korumayı hesabınıza bağlayın; sonraki açılışlarda oturumunuz hatırlansın.");
+        form.addView(message);
+        CheckBox consent = new CheckBox(owner); consent.setTextColor(Color.WHITE);
+        consent.setText("Normal modda tam URL'nin query dahil ve temizlenmiş sayfa içeriğinin analiz için PhiShark'a gönderilmesine izin veriyorum. Gizli modda yalnız URL gönderilir.");
+        consent.setChecked(hasDeepConsent());
+        if (connected) form.addView(consent);
+        AlertDialog.Builder builder = new AlertDialog.Builder(owner).setView(form).setCancelable(!firstRun)
+                .setPositiveButton(connected ? "Tarayıcıya devam et" : "PhiShark'a giriş yap", null)
+                .setNegativeButton(firstRun ? "Şimdilik atla" : "Kapat", (dialog, which) -> {
+                    prefs().edit().putBoolean("phishark.onboarded.v1", true).apply();
+                });
+        if (connected) builder.setNeutralButton("Hesaptan çık", (dialog, which) -> BrowserAccount.logout());
+        AlertDialog created = builder.create(); accountDialog = created;
+        created.setOnDismissListener(dialog -> { if (accountDialog == created) accountDialog = null; });
+        created.setOnShowListener(dialog -> created.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
+            if (connected) {
+                prefs().edit().putBoolean(CONSENT, consent.isChecked()).putBoolean("phishark.onboarded.v1", true)
+                        .putLong(VERSION, getSettingsVersion() + 1).apply(); created.dismiss();
+            } else {
+                created.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+                message.setText("PhiShark giriş sayfası açılıyor…");
+                BrowserAccount.start(owner, result -> {
+                    if (!created.isShowing()) return;
+                    message.setText(result); created.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                });
+            }
+        }));
+        created.show();
     }
 
     private void showSettings() {
@@ -248,6 +327,7 @@ public final class PhiSharkBridge {
                 if (key.length() > 0) {
                     bytes = key.getText().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
                     vault().save(bytes);
+                    BrowserAccount.useDeveloperKey();
                 }
                 prefs().edit().putString(BASE, uri.toString()).putBoolean(CONSENT, consent.isChecked())
                         .putLong(VERSION, getSettingsVersion() + 1).apply();

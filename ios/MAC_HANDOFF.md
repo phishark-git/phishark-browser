@@ -214,6 +214,27 @@ force-push etmeyin; Mac değişiklikleri incelenip ortak dala alınabilir.
 
 ## Sonraki iOS aşaması
 
+Hesapla giriş sözleşmesi artık eklenti benzeri PKCE akışıdır:
+`POST /api/browser/auth/{start,authorize,token,refresh,logout}`, client `browser`,
+scope `browser:scan`, tam callback `io.phishark.browser:/oauth/callback`.
+Dashboard dönüş sayfası `/browser/connect`; backend ve dashboard değişiklikleri
+henüz üretime alınmadı. Manuel API anahtarı artık ana kurulum deneyimi değildir.
+
+Swift paketindeki `BrowserAccountFlow` PKCE/callback doğrulamasını içerir;
+`APIKeyVault(purpose: .session)` ve `.pending` ayrı Keychain kayıtları sağlar.
+Mac üzerinde `swift test` ile yeni testleri de çalıştırın. Fennec baseline sonrası
+`ASWebAuthenticationSession`, tek seferde tek refresh, atomik token çifti kaydı,
+native onay/çıkış ve `Authorization: Bearer` analiz isteklerini bağlayın.
+Bu dosyalar iOS girişinin tamamlandığı veya derlendiği anlamına gelmez.
+Giriş/çıkışta bekleyen taramaları iptal edin ve önceki hesabın bellek önbelleğini
+temizleyin. `/api/v1/browser/*` dışındaki kalıcı scan uçlarına geçmeyin.
+
+İlk açılış, app icon, splash, yeni sekme ve ayarlar PhiShark Browser olacak.
+Android'de kullanılan mevcut PhiShark marka görselleri
+`android/integration/chromium/chrome/android/java/res_base/drawable-nodpi/`
+altında bulunuyor; kullanıcıya görünen Firefox/Mozilla ürün markasını değiştirin,
+lisans ve üçüncü taraf bildirimlerini Hakkında bölümünde koruyun.
+
 Değiştirilmemiş Fennec derlemesi ve açılışı doğrulanınca native entegrasyon
 noktaları [`native-integration-points.md`](../docs/native-integration-points.md)
 üzerinden ele alınır. Gezinme delegate'leri, native networking/cache, Keychain

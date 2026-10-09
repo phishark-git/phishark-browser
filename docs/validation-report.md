@@ -100,7 +100,7 @@ the actual PhiShark package passed; its x64 APK/AAB built, and the APK launched.
 After fixing a missing Cromite firewall rule, device fixtures verified preflight
 blocking before page GET, post-load deep blocking, return to safety and private
 URL-only requests. One normal deep capture passed synthetic sensitive-field/header
-checks. Integrated ARM64 build is running; the broader device suite remains incomplete.
+checks. Integrated ARM64 APK/AAB subsequently built with the pre-account overlay; physical launch and the broader device suite remain incomplete.
 Screenshot masking, complete capture, cross-tab request coalescing, final
 address-bar integration, Firefox delegate integration, telemetry/account/sync
 audit and actual browser-function acceptance remain incomplete. See

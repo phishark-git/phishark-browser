@@ -44,6 +44,8 @@ public final class VaultInstrumentation extends Instrumentation {
         try {
             if ("prepare".equals(phase)) {
                 vault.clear(); vault.save(SYNTHETIC);
+                new ApiKeyVault(getTargetContext(), "session").save(SYNTHETIC);
+                new ApiKeyVault(getTargetContext(), "pending").save(SYNTHETIC);
                 require(Arrays.equals(vault.load(), SYNTHETIC));
                 // Leave only synthetic encrypted data for a separate process to read.
             } else {
@@ -73,6 +75,18 @@ public final class VaultInstrumentation extends Instrumentation {
                 vault.clear(); require(vault.load() == null); require(!file.exists());
                 KeyStore store = KeyStore.getInstance("AndroidKeyStore"); store.load(null);
                 require(!store.containsAlias(ALIAS));
+                ApiKeyVault session = new ApiKeyVault(getTargetContext(), "session");
+                ApiKeyVault pending = new ApiKeyVault(getTargetContext(), "pending");
+                require(Arrays.equals(session.load(), SYNTHETIC));
+                require(Arrays.equals(pending.load(), SYNTHETIC));
+                mustReject(() -> new ApiKeyVault(getTargetContext(), "../session"));
+                mustReject(() -> session.save(new byte[16385]));
+                File sessionFile = new File(getTargetContext().getNoBackupFilesDir(), "phishark-session.enc");
+                File pendingFile = new File(getTargetContext().getNoBackupFilesDir(), "phishark-pending.enc");
+                Files.write(pendingFile.toPath(), Files.readAllBytes(sessionFile.toPath()));
+                mustReject(() -> pending.load()); // Different purpose uses a different key and AAD.
+                pending.clear(); require(Arrays.equals(session.load(), SYNTHETIC));
+                session.clear(); require(session.load() == null);
                 Arrays.fill(first, (byte) 0); Arrays.fill(second, (byte) 0);
             }
             result.putInt("checks", checks); result.putString("outcome", "passed");

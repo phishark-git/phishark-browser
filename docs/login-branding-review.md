@@ -3,6 +3,11 @@
 Kaynak incelemesi: 2026-10-09. Bu belge çalışan hesap entegrasyonu veya üretim
 doğrulaması değildir. Tarayıcı prototipi hâlâ kişisel API anahtarı kullanır.
 
+**Sonraki uygulama:** Kullanıcının eklenti benzeri giriş talebi üzerine aşağıdaki
+eksikler için backend, dashboard ve Android kaynakları eklendi. Güncel kapsam ve
+doğrulama [hesap uygulaması](browser-account-implementation.md) belgesindedir.
+Bu inceleme önceki durumun kaydıdır; üretim deployment'ı yapılmış sayılmaz.
+
 ## ARM emülatöründeki çökme
 
 Windows üzerinde x86_64 Android emülatörü çalışıyor; ARM64 APK çeviri katmanından

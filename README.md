@@ -7,7 +7,10 @@ verified, releasable mobile browser. See [implementation status](docs/implementa
 
 PhiShark checks document navigations before loading and, with consent in normal
 mode, analyzes captured page evidence after loading. Private mode performs URL-only
-checks. Users provide their own API keys; no privileged server credentials are shipped.
+checks. Primary onboarding connects a PhiShark account through extension-style
+PKCE pairing and remembers the native session. Personal API keys remain a developer
+option; no privileged server credentials are shipped. Android account integration
+is being validated; iOS still needs its native adapter and Mac acceptance.
 Temporary service failures allow browsing with an explicit unverified indicator.
 Confirmed threats cannot be bypassed.
 
