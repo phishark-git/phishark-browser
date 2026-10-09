@@ -112,3 +112,9 @@ rollback adımları için özel onay beklenir. Bu sınır workspace `AGENTS.md`:
 “Treat destructive or hard-to-reverse operations as requiring specific approval
 even when a general deployment was approved.” hükmünden gelir. SSH/VDS
 incelemesi bu plana dahil değildir ve ayrıca izin gerektirir.
+
+Graphify: browser/Gatekeeper kod ve component grafikleri, ardından workspace
+yenilendi (13.060 düğüm, 28.739 kenar). Başlangıç yayın etki sorgusu tekrarlandı:
+734 düğüm, gösterim bütçesi nedeniyle kırpılmış çıktı. Kaynak kontrolü esas
+alındı; belge semantiği, farklı dal snapshot'ları ve canlı runtime kapsamı
+eksik kalıyor. Bu yenileme üretim doğrulaması değildir.
