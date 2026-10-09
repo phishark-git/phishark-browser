@@ -114,6 +114,13 @@ def main():
             '      "java/res_base/drawable/ic_launcher.xml",', 'icon resources')
 
     edit('chrome/android/BUILD.gn', android_gn)
+    # Only the factory-supplied new-tab suggestions; user history/bookmarks remain
+    # controlled by the existing browser model. Do not ship Chromium demo links.
+    edit('components/ntp_tiles/resources/default_popular_sites.json', lambda text:
+        json.dumps([
+            {'title': 'PhiShark', 'url': 'https://phishark.io/'},
+            {'title': 'PhiShark hesabım', 'url': 'https://app.phishark.io/'},
+        ], indent=2) + '\n')
 
     def core(body):
         body = replace_once(body, '  defines = [ "ZLIB_CONST" ]',
