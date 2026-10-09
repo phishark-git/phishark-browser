@@ -24,6 +24,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		A61F10000000000000000001 /* PhiSharkSecurity in Frameworks */ = {isa = PBXBuildFile; productRef = A61F10000000000000000002 /* PhiSharkSecurity */; };
 		032CE5F62EBA0C04007CCC0D /* ToUExperiencePointsCalculatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032CE5F52EBA0C04007CCC0D /* ToUExperiencePointsCalculatorTests.swift */; };
 		033A5FCC2E5F001200A84E8A /* TermsOfUseTelemetryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033A5FCB2E5F001200A84E8A /* TermsOfUseTelemetryTests.swift */; };
 		033A62002E77FE9900A84E8A /* ResetTermsOfServiceAcceptancePage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033A61FF2E77FE9900A84E8A /* ResetTermsOfServiceAcceptancePage.swift */; };
@@ -12582,6 +12583,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A61F10000000000000000001 /* PhiSharkSecurity in Frameworks */,
 				AA93D2D82F71B445002E5E88 /* LLMKit in Frameworks */,
 				5A70EF0E295DFCCF00790249 /* Common in Frameworks */,
 				8A08EC6427EBDCAD00E119C7 /* AdServices.framework in Frameworks */,
@@ -18539,6 +18541,7 @@
 			);
 			name = Client;
 			packageProductDependencies = (
+				A61F10000000000000000002 /* PhiSharkSecurity */,
 				433F87CD2788EAB600693368 /* GCDWebServers */,
 				435C85EF2788F4D00072B526 /* Glean */,
 				5A871487292EA1440039A5BD /* Fuzi */,
@@ -18891,6 +18894,7 @@
 			);
 			mainGroup = F84B21B51A090F8100AAB793;
 			packageReferences = (
+				A61F10000000000000000003 /* XCLocalSwiftPackageReference "PhiSharkSecurity" */,
 				433F87CC2788EAB600693368 /* XCRemoteSwiftPackageReference "GCDWebServer" */,
 				433F87D12788EF5B00693368 /* XCRemoteSwiftPackageReference "KIF" */,
 				435C85EE2788F4D00072B526 /* XCRemoteSwiftPackageReference "glean-swift" */,
@@ -34170,7 +34174,18 @@
 		};
 /* End XCRemoteSwiftPackageReference section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		A61F10000000000000000003 /* XCLocalSwiftPackageReference "PhiSharkSecurity" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = PhiSharkSecurity;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		A61F10000000000000000002 /* PhiSharkSecurity */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PhiSharkSecurity;
+		};
 		0B6D1C872E15456F00919F1E /* SummarizeKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SummarizeKit;

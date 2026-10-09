@@ -39,9 +39,9 @@ struct TermsOfServiceManager: FeatureFlaggable, Sendable {
     }
 
     func shouldSendTechnicalData(telemetryValue: Bool, studiesValue: Bool) {
-        DefaultGleanWrapper().setUpload(isEnabled: telemetryValue)
-        Experiments.setStudiesSetting(studiesValue)
-        Experiments.setTelemetrySetting(telemetryValue)
+        DefaultGleanWrapper().setUpload(isEnabled: false)
+        Experiments.setStudiesSetting(false)
+        Experiments.setTelemetrySetting(false)
     }
 
     // MARK: - Terms of Use Configuration

@@ -8,9 +8,14 @@ IFS=$'\t' read -r upstream_url upstream_tag upstream_commit upstream_tree requir
 )"
 xcode_version=$(xcodebuild -version)
 printf '%s\n' "$xcode_version"
-[[ ${xcode_version%%$'\n'*} = "Xcode $required_xcode" ]] || {
+actual_xcode=${xcode_version%%$'\n'*}
+[[ $actual_xcode = "Xcode $required_xcode" ||
+   ( $required_xcode = 26.5 && $actual_xcode = 'Xcode 26.6' && ${PHISHARK_XCODE_EXPERIMENT:-} = 26.6 ) ]] || {
   echo "Pinned Firefox requires Xcode $required_xcode; review a mismatch before building"; exit 2;
 }
+if [[ $actual_xcode != "Xcode $required_xcode" ]]; then
+  printf 'Xcode compatibility experiment: pinned %s; installed 26.6 (unverified)\n' "$required_xcode"
+fi
 swift --version
 
 # Upstream bootstrap installs .git/hooks and expects a standalone Git root.
@@ -31,6 +36,11 @@ printf 'Verified upstream: %s\nProject: %s\n' "$upstream_commit" "$project_path"
 cd "$baseline_root"
 # Surface failed dependency downloads rather than continuing to xcodebuild.
 bash -e -o pipefail ./bootstrap.sh
-xcodebuild -project firefox-ios/Client.xcodeproj -scheme Fennec \
- -destination 'generic/platform=iOS Simulator' \
- -derivedDataPath "$repo_root/.build/ios-baseline" CODE_SIGNING_ALLOWED=NO build
+destination=${PHISHARK_DESTINATION:-generic/platform=iOS Simulator}
+build_args=(-project firefox-ios/Client.xcodeproj -scheme Fennec
+  -destination "$destination" -derivedDataPath "$repo_root/.build/ios-baseline")
+if [[ -n ${PHISHARK_BUILD_JOBS:-} ]]; then build_args+=(-jobs "$PHISHARK_BUILD_JOBS"); fi
+if [[ -n ${PHISHARK_ARCHS:-} ]]; then build_args+=("ARCHS=$PHISHARK_ARCHS"); fi
+printf 'Build destination: %s\nBuild jobs: %s\nBuild architectures: %s\n' \
+  "$destination" "${PHISHARK_BUILD_JOBS:-Xcode default}" "${PHISHARK_ARCHS:-Xcode default}"
+xcodebuild "${build_args[@]}" CODE_SIGNING_ALLOWED=NO build

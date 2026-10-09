@@ -28,6 +28,10 @@ final class AppLaunchUtil: FeatureFlaggable, Sendable {
 
     @MainActor
     func setUpPreLaunchDependencies() {
+        profile.prefs.setBool(false, forKey: AppConstants.prefSendUsageData)
+        profile.prefs.setBool(false, forKey: AppConstants.prefSendCrashReports)
+        profile.prefs.setBool(false, forKey: AppConstants.prefStudiesToggle)
+        DefaultGleanWrapper().setUpload(isEnabled: false)
         // If the 'Save logs to Files app on next launch' toggle
         // is turned on in the Settings app, copy over old logs.
         if DebugSettingsBundleOptions.saveLogsToDocuments {

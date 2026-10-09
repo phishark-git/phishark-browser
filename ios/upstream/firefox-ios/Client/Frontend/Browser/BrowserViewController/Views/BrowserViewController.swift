@@ -17,6 +17,7 @@ import SummarizeKit
 import ActivityKit
 import Glean
 import QuickAnswersKit
+import PhiSharkSecurity
 
 import class Account.RustFirefoxAccounts
 import class MozillaAppServices.BookmarkFolderData
@@ -189,6 +190,12 @@ class BrowserViewController: UIViewController,
     private(set) lazy var contentContainer: ContentContainer = .build { view in
         view.accessibilityIdentifier = AccessibilityIdentifiers.Browser.contentContainer
     }
+
+    var phiSharkCoordinator: BrowserProtectionCoordinator?
+    var phiSharkActiveKey: String?
+    var phiSharkTargets: [String: (generation: UInt64, url: URL)] = [:]
+    var phiSharkStatusLabel: UILabel?
+    var phiSharkBlockView: UIView?
 
     // A view for displaying a preview of the web page.
     private lazy var webPagePreview: TabWebViewPreview = .build {
@@ -1061,6 +1068,7 @@ class BrowserViewController: UIViewController,
         super.viewDidLoad()
 
         setupEssentialUI()
+        setupPhiSharkStatus()
         subscribeToRedux()
         tabManager.restoreTabs()
         updateAddressToolbarContainerPosition(for: traitCollection)
@@ -4727,6 +4735,14 @@ extension BrowserViewController: SearchViewControllerDelegate {
 
 extension BrowserViewController: TabManagerDelegate {
     func tabManager(_ tabManager: TabManager, didSelectedTabChange selectedTab: Tab, previousTab: Tab?, isRestoring: Bool) {
+        phiSharkBlockView?.removeFromSuperview()
+        phiSharkBlockView = nil
+        if let update = phiSharkCoordinator?.current(tabID: selectedTab.tabUUID) {
+            showPhiSharkState(update.state, for: selectedTab)
+            if update.state == .blocked { showPhiSharkBlock(for: selectedTab) }
+        } else {
+            phiSharkStatusLabel?.isHidden = true
+        }
         // Failing to have a non-nil webView by this point will cause the toolbar scrolling behaviour to regress,
         // back/forward buttons never to become enabled, etc. on tab restore after launch. [FXIOS-9785, FXIOS-9781]
         assert(selectedTab.webView != nil, "Setup will fail if the webView is not initialized for selectedTab")
@@ -4890,6 +4906,12 @@ extension BrowserViewController: TabManagerDelegate {
     }
 
     func tabManager(_ tabManager: TabManager, didRemoveTab tab: Tab, isRestoring: Bool) {
+        phiSharkCoordinator?.close(tabID: tab.tabUUID)
+        phiSharkTargets.removeValue(forKey: tab.tabUUID)
+        if tab == tabManager.selectedTab {
+            phiSharkBlockView?.removeFromSuperview()
+            phiSharkBlockView = nil
+        }
         if let url = tab.lastKnownUrl, !(InternalURL(url)?.isAboutURL ?? false), !tab.isPrivate {
             profile.recentlyClosedTabs.addTab(url as URL,
                                               title: tab.lastTitle,

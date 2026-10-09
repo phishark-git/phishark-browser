@@ -10,6 +10,7 @@ import UIKit
 import Photos
 import SafariServices
 import WebEngine
+import PhiSharkSecurity
 
 // MARK: - WKUIDelegate
 extension BrowserViewController: WKUIDelegate {
@@ -72,6 +73,7 @@ extension BrowserViewController: WKUIDelegate {
 
         // Set new tab url to about:blank because webViews created through this callback are always popups
         newTab.url = URL(string: "about:blank")
+        phiSharkTargets.removeValue(forKey: newTab.tabUUID)
 
         // Select the new tab immediately
         tabManager.selectTab(newTab)
@@ -523,6 +525,10 @@ extension BrowserViewController: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didReceiveServerRedirectForProvisionalNavigation navigation: WKNavigation?) {
         guard let tab = tabManager[webView] else { return }
 
+        if let url = webView.url, ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
+            showPhiSharkState(.checking, for: tab)
+        }
+
         if !tab.adsTelemetryUrlList.isEmpty,
            !tab.adsProviderName.isEmpty,
            let webUrl = webView.url {
@@ -573,6 +579,9 @@ extension BrowserViewController: WKNavigationDelegate {
         }
 
         if InternalURL.isValid(url: url) {
+            phiSharkBlockView?.removeFromSuperview()
+            phiSharkBlockView = nil
+            phiSharkStatusLabel?.isHidden = true
             handleInternalURLNavigation(url: url, navigationAction: navigationAction, decisionHandler: decisionHandler)
             return
         }
@@ -592,6 +601,9 @@ extension BrowserViewController: WKNavigationDelegate {
         }
 
         if url.scheme == "about" {
+            phiSharkBlockView?.removeFromSuperview()
+            phiSharkBlockView = nil
+            phiSharkStatusLabel?.isHidden = true
             decisionHandler(.allow)
             return
         }
@@ -639,6 +651,13 @@ extension BrowserViewController: WKNavigationDelegate {
         // This is the normal case, opening a http or https url, which we handle by loading them in this WKWebView.
         // We always allow this. Additionally, data URIs are also handled just like normal web pages.
         if let scheme = url.scheme, ["http", "https", "blob", "file"].contains(scheme) {
+            if ["http", "https"].contains(scheme), navigationAction.targetFrame?.isMainFrame != false {
+                handlePhiSharkPreflight(webView: webView, url: url, tab: tab,
+                                        navigationAction: navigationAction,
+                                        shouldBlockExternalApps: shouldBlockExternalApps,
+                                        decisionHandler: decisionHandler)
+                return
+            }
             handleWebURLNavigation(
                 webView: webView,
                 url: url,
@@ -683,7 +702,7 @@ extension BrowserViewController: WKNavigationDelegate {
         if navigationAction.navigationType != .backForward,
            navigationAction.isInternalUnprivileged,
            !url.isReaderModeURL {
-            logger.log("Denying unprivileged request: \(navigationAction.request)",
+            logger.log("Denying unprivileged internal request",
                        level: .warning,
                        category: .webview)
             decisionHandler(.cancel)
@@ -1368,6 +1387,10 @@ extension BrowserViewController: WKNavigationDelegate {
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation?) {
+        if let tab = tabManager[webView], let url = webView.url,
+           ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
+            inspectPhiSharkFinishedPage(webView: webView, tab: tab, url: url)
+        }
         // Reveal content hidden on a cross-origin popup commit now that the page has presented.
         webView.isHidden = false
         webviewTelemetry.stop()
@@ -1628,5 +1651,203 @@ extension WKNavigationAction {
         }
 
         return false
+    }
+}
+
+@MainActor
+extension BrowserViewController {
+    func handlePhiSharkPreflight(
+        webView: WKWebView,
+        url: URL,
+        tab: Tab,
+        navigationAction: WKNavigationAction,
+        shouldBlockExternalApps: Bool,
+        decisionHandler: @escaping @MainActor (WKNavigationActionPolicy) -> Void
+    ) {
+        phiSharkBlockView?.removeFromSuperview()
+        phiSharkBlockView = nil
+        guard let coordinator = phiSharkCoordinatorForCurrentKey() else {
+            showPhiSharkState(.unverified, for: tab)
+            handleWebURLNavigation(webView: webView, url: url, tab: tab,
+                                   navigationAction: navigationAction,
+                                   shouldBlockExternalApps: shouldBlockExternalApps,
+                                   decisionHandler: decisionHandler)
+            return
+        }
+        let generation = coordinator.begin(tabID: tab.tabUUID, target: url,
+                                           isPrivate: tab.isPrivate,
+                                           consent: PhiSharkSettings.deepConsent)
+        phiSharkTargets[tab.tabUUID] = (generation, url)
+        showPhiSharkState(.checking, for: tab)
+        Task { @MainActor [weak self, weak webView] in
+            let update = await coordinator.preflight(tabID: tab.tabUUID, generation: generation)
+            guard let self, let webView, self.phiSharkCoordinator === coordinator,
+                  self.tabManager[webView] === tab, update.isCurrent else {
+                decisionHandler(.cancel)
+                return
+            }
+            self.showPhiSharkState(update.state, for: tab)
+            if update.state == .blocked {
+                self.showPhiSharkBlock(for: tab)
+                decisionHandler(.cancel)
+            } else {
+                self.handleWebURLNavigation(webView: webView, url: url, tab: tab,
+                                            navigationAction: navigationAction,
+                                            shouldBlockExternalApps: shouldBlockExternalApps,
+                                            decisionHandler: decisionHandler)
+            }
+        }
+    }
+
+    func setupPhiSharkStatus() {
+        let label = UILabel()
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.backgroundColor = .systemGray
+        label.textColor = .white
+        label.font = .preferredFont(forTextStyle: .caption2)
+        label.textAlignment = .center
+        label.layer.cornerRadius = 8
+        label.clipsToBounds = true
+        label.isHidden = true
+        label.accessibilityIdentifier = "PhiSharkProtectionStatus"
+        view.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.topAnchor.constraint(equalTo: contentContainer.topAnchor, constant: 8),
+            label.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor, constant: -8),
+            label.widthAnchor.constraint(greaterThanOrEqualToConstant: 128),
+            label.heightAnchor.constraint(equalToConstant: 25)
+        ])
+        phiSharkStatusLabel = label
+    }
+
+    func phiSharkCoordinatorForCurrentKey() -> BrowserProtectionCoordinator? {
+        let key = PhiSharkSettings.apiKey()
+        if key != phiSharkActiveKey {
+            for tabID in phiSharkTargets.keys { phiSharkCoordinator?.close(tabID: tabID) }
+            phiSharkTargets.removeAll()
+            phiSharkCoordinator = nil
+            phiSharkActiveKey = key
+            #if DEBUG
+            let useFixture = ProcessInfo.processInfo.environment["PHISHARK_USE_LOCAL_FIXTURE"] == "1"
+            #else
+            let useFixture = false
+            #endif
+            let baseURL = URL(string: useFixture ? "http://127.0.0.1:8765" : "https://api.phishark.io")
+            if let key, let baseURL,
+               let client = try? BrowserAPIClient(baseURL: baseURL, apiKey: key,
+                                                  allowLoopbackHTTP: useFixture) {
+                phiSharkCoordinator = BrowserProtectionCoordinator(scanner: client)
+            }
+        }
+        return phiSharkCoordinator
+    }
+
+    func showPhiSharkState(_ state: ProtectionState, for tab: Tab) {
+        guard tab === tabManager.selectedTab, let label = phiSharkStatusLabel else { return }
+        label.isHidden = false
+        switch state {
+        case .checking:
+            label.text = "  PhiShark · Kontrol ediliyor  "
+            label.backgroundColor = .systemBlue
+        case .safe:
+            label.text = "  PhiShark · Güvenli  "
+            label.backgroundColor = .systemGreen
+        case .warning:
+            label.text = "  PhiShark · Uyarı  "
+            label.backgroundColor = .systemOrange
+        case .blocked:
+            label.text = "  PhiShark · Engellendi  "
+            label.backgroundColor = .systemRed
+        case .unverified:
+            label.text = "  PhiShark · Doğrulanamadı  "
+            label.backgroundColor = .systemGray
+        case .serviceError:
+            label.text = "  PhiShark · Hizmet hatası  "
+            label.backgroundColor = .systemGray
+        }
+        view.bringSubviewToFront(label)
+    }
+
+    func showPhiSharkBlock(for tab: Tab) {
+        guard tab === tabManager.selectedTab else { return }
+        phiSharkBlockView?.removeFromSuperview()
+        let overlay = UIView()
+        overlay.translatesAutoresizingMaskIntoConstraints = false
+        overlay.backgroundColor = .systemBackground
+        overlay.accessibilityIdentifier = "PhiSharkBlockedPage"
+        let title = UILabel()
+        title.translatesAutoresizingMaskIntoConstraints = false
+        title.text = "PhiShark bu sayfayı engelledi"
+        title.textColor = .systemRed
+        title.font = .preferredFont(forTextStyle: .title2)
+        title.textAlignment = .center
+        title.numberOfLines = 0
+        overlay.addSubview(title)
+        view.addSubview(overlay)
+        NSLayoutConstraint.activate([
+            overlay.leadingAnchor.constraint(equalTo: contentContainer.leadingAnchor),
+            overlay.trailingAnchor.constraint(equalTo: contentContainer.trailingAnchor),
+            overlay.topAnchor.constraint(equalTo: contentContainer.topAnchor),
+            overlay.bottomAnchor.constraint(equalTo: contentContainer.bottomAnchor),
+            title.centerXAnchor.constraint(equalTo: overlay.centerXAnchor),
+            title.centerYAnchor.constraint(equalTo: overlay.centerYAnchor),
+            title.leadingAnchor.constraint(greaterThanOrEqualTo: overlay.leadingAnchor, constant: 20),
+            title.trailingAnchor.constraint(lessThanOrEqualTo: overlay.trailingAnchor, constant: -20)
+        ])
+        phiSharkBlockView = overlay
+        view.bringSubviewToFront(overlay)
+        showPhiSharkState(.blocked, for: tab)
+    }
+
+    func inspectPhiSharkFinishedPage(webView: WKWebView, tab: Tab, url: URL) {
+        guard let coordinator = phiSharkCoordinatorForCurrentKey() else { return }
+        Task { @MainActor [weak self, weak webView] in
+            guard let self, let webView else { return }
+            await self.runPhiSharkFinishedPage(webView: webView, tab: tab, url: url,
+                                               coordinator: coordinator)
+        }
+    }
+
+    private func runPhiSharkFinishedPage(webView: WKWebView, tab: Tab, url: URL,
+                                         coordinator: BrowserProtectionCoordinator) async {
+        guard tabManager[webView] === tab else { return }
+        var generation: UInt64
+        if let target = phiSharkTargets[tab.tabUUID], target.url == url {
+            generation = target.generation
+        } else {
+            generation = coordinator.begin(tabID: tab.tabUUID, target: url,
+                                           isPrivate: tab.isPrivate,
+                                           consent: PhiSharkSettings.deepConsent)
+            phiSharkTargets[tab.tabUUID] = (generation, url)
+            showPhiSharkState(.checking, for: tab)
+            let update = await coordinator.preflight(tabID: tab.tabUUID, generation: generation)
+            guard update.isCurrent, phiSharkCoordinator === coordinator,
+                  tabManager[webView] === tab, webView.url == url else { return }
+            showPhiSharkState(update.state, for: tab)
+            if update.state == .blocked {
+                webView.stopLoading()
+                webView.loadHTMLString("", baseURL: nil)
+                showPhiSharkBlock(for: tab)
+                return
+            }
+        }
+        guard !tab.isPrivate, PhiSharkSettings.deepConsent,
+              let current = coordinator.current(tabID: tab.tabUUID),
+              current.generation == generation,
+              current.state != .blocked, current.state != .serviceError,
+              webView.url == url,
+              let evidence = await SafeHTMLCapture.capture(from: webView),
+              webView.url == url, PhiSharkSettings.deepConsent else { return }
+        coordinator.setConsent(PhiSharkSettings.deepConsent, tabID: tab.tabUUID)
+        let update = await coordinator.deep(tabID: tab.tabUUID,
+                                            generation: generation, evidence: evidence)
+        guard update.isCurrent, phiSharkCoordinator === coordinator,
+              tabManager[webView] === tab, webView.url == url else { return }
+        showPhiSharkState(update.state, for: tab)
+        if update.state == .blocked {
+            webView.stopLoading()
+            webView.loadHTMLString("", baseURL: nil)
+            showPhiSharkBlock(for: tab)
+        }
     }
 }

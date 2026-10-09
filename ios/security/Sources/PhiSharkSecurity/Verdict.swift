@@ -50,7 +50,13 @@ public struct ScanResult: Decodable, Sendable {
         if state == .safe && profile == .deep { lastSafeURL = url }
         return true
     }
-    public var canCapture: Bool { consent && !isPrivate && state != .blocked }
+    @discardableResult public func apply(_ outcome: BrowserScanOutcome, profile: ScanProfile, generation: UInt64) -> Bool {
+        guard generation == self.generation, state != .blocked else { return false }
+        state = outcome.state
+        if state == .safe && profile == .deep { lastSafeURL = url }
+        return true
+    }
+    public var canCapture: Bool { consent && !isPrivate && state != .blocked && state != .serviceError }
     public func close() {
         tasks.forEach { $0.cancel() }; tasks.removeAll(); generation &+= 1
         url = nil; lastSafeURL = nil; consent = false; state = .unverified

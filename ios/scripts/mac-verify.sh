@@ -23,13 +23,22 @@ done
 node -e 'if (Number(process.versions.node.split(".")[0]) < 22) process.exit(1)' || fail 'Node.js 22+ is required.'
 required_xcode=$(node -e 'console.log(require(process.argv[1]).ios.xcode)' "$repo_root/shared/security-contract/upstreams.lock.json")
 xcode_version=$(xcodebuild -version) || fail 'Select the full Xcode application, open it once and finish setup.'
-[[ ${xcode_version%%$'\n'*} = "Xcode $required_xcode" ]] || fail "This pin requires Xcode $required_xcode. Report your version before changing the pin."
+actual_xcode=${xcode_version%%$'\n'*}
+if [[ $actual_xcode != "Xcode $required_xcode" ]]; then
+  [[ $required_xcode = 26.5 && $actual_xcode = 'Xcode 26.6' && ${PHISHARK_XCODE_EXPERIMENT:-} = 26.6 ]] ||
+    fail "This pin requires Xcode $required_xcode. Report your version before changing the pin."
+  printf 'Xcode compatibility experiment: pinned %s; installed 26.6 (unverified)\n' "$required_xcode" >> "$summary"
+fi
 {
   printf 'Browser commit: %s\n' "$(git -C "$repo_root" rev-parse HEAD)"
   printf 'Architecture: %s\nmacOS: %s\n' "$(uname -m)" "$(sw_vers -productVersion)"
   printf '%s\n' "$xcode_version"
+  printf 'Pinned Xcode: %s\nInstalled Xcode: %s\n' "$required_xcode" "$actual_xcode"
   swift --version
   printf 'Node: %s\n' "$(node --version)"
+  printf 'Build destination: %s\nBuild jobs: %s\nBuild architectures: %s\n' \
+    "${PHISHARK_DESTINATION:-generic/platform=iOS Simulator}" \
+    "${PHISHARK_BUILD_JOBS:-Xcode default}" "${PHISHARK_ARCHS:-Xcode default}"
 } >> "$summary"
 printf 'Preflight: PASS\n' >> "$summary"
 failed=0

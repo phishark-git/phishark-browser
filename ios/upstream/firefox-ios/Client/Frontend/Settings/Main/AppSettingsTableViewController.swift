@@ -6,6 +6,7 @@ import Common
 import UIKit
 import Shared
 import Glean
+import PhiSharkSecurity
 
 import struct MozillaAppServices.VisitObservation
 
@@ -272,7 +273,7 @@ class AppSettingsTableViewController: SettingsTableViewController,
         )
 
         sendTechnicalDataSettings.settingDidChange = { value in
-            DefaultGleanWrapper().setUpload(isEnabled: value)
+            DefaultGleanWrapper().setUpload(isEnabled: false)
             Experiments.setTelemetrySetting(value)
             studiesSetting.updateSetting(for: value)
         }
@@ -425,6 +426,9 @@ class AppSettingsTableViewController: SettingsTableViewController,
 
     private func getPrivacySettings() -> [SettingSection] {
         var privacySettings = [Setting]()
+
+        privacySettings.append(PhiSharkAPIKeySetting())
+        privacySettings.append(PhiSharkDeepConsentSetting())
 
         privacySettings.append(AutofillPasswordSetting(settings: self, settingsDelegate: parentCoordinator))
 
@@ -666,5 +670,76 @@ class AppSettingsTableViewController: SettingsTableViewController,
             return UIView()
         }
         return headerView
+    }
+}
+
+@MainActor
+enum PhiSharkSettings {
+    private static let consentName = "io.phishark.browser.deep-consent"
+
+    static var deepConsent: Bool {
+        get { UserDefaults.standard.bool(forKey: consentName) }
+        set { UserDefaults.standard.set(newValue, forKey: consentName) }
+    }
+
+    static func apiKey() -> String? {
+        guard let data = try? APIKeyVault().load() else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
+
+    @discardableResult static func setAPIKey(_ value: String?) -> Bool {
+        do {
+            if let value, !value.isEmpty { try APIKeyVault().save(Data(value.utf8)) }
+            else { try APIKeyVault().clear() }
+            return true
+        } catch { return false }
+    }
+}
+
+@MainActor
+private final class PhiSharkAPIKeySetting: Setting {
+    override var accessibilityIdentifier: String? { "PhiSharkAPIKeySetting" }
+    override var status: NSAttributedString? {
+        NSAttributedString(string: PhiSharkSettings.apiKey() == nil ? "Ayarlanmadı" : "Keychain'de saklanıyor")
+    }
+
+    init() { super.init(title: NSAttributedString(string: "PhiShark API anahtarı")) }
+
+    override func onClick(_ navigationController: UINavigationController?) {
+        let alert = UIAlertController(title: "PhiShark API anahtarı", message: "Anahtar yalnız Keychain'de tutulur.", preferredStyle: .alert)
+        alert.addTextField { field in
+            field.isSecureTextEntry = true
+            field.textContentType = .password
+            field.autocorrectionType = .no
+            field.autocapitalizationType = .none
+            field.accessibilityIdentifier = "PhiSharkAPIKeyInput"
+        }
+        alert.addAction(UIAlertAction(title: "İptal", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Sil", style: .destructive) { _ in
+            _ = PhiSharkSettings.setAPIKey(nil)
+            (navigationController?.topViewController as? AppSettingsTableViewController)?.askedToReload()
+        })
+        alert.addAction(UIAlertAction(title: "Kaydet", style: .default) { _ in
+            let key = alert.textFields?.first?.text?.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let key, !key.isEmpty, !key.contains("\n"), !key.contains("\r") else { return }
+            _ = PhiSharkSettings.setAPIKey(key)
+            (navigationController?.topViewController as? AppSettingsTableViewController)?.askedToReload()
+        })
+        navigationController?.present(alert, animated: true)
+    }
+}
+
+@MainActor
+private final class PhiSharkDeepConsentSetting: Setting {
+    override var accessibilityIdentifier: String? { "PhiSharkDeepConsentSetting" }
+    override var status: NSAttributedString? {
+        NSAttributedString(string: PhiSharkSettings.deepConsent ? "Açık · yalnız normal sekmeler" : "Kapalı")
+    }
+
+    init() { super.init(title: NSAttributedString(string: "Derin analiz onayı")) }
+
+    override func onClick(_ navigationController: UINavigationController?) {
+        PhiSharkSettings.deepConsent.toggle()
+        (navigationController?.topViewController as? AppSettingsTableViewController)?.askedToReload()
     }
 }
