@@ -20,6 +20,38 @@ Mevcut Mac değişikliklerini ve bu kanıtı koruyun, baseline işini baştan ya
 
 Windows ortak dalı `codex/browser-mvp` artık PKCE helper'ını, ayrı Keychain
 amaçlarını ve Android hesap referansını içeriyor. Mac dalı bunlardan önce ayrıldı.
+
+**Yeni kanıt görevi:** Derin analizde gerçek HTML LLM'e, gerçek PNG VLM'e gitmeli.
+Android referansı: [masked PNG evidence](../docs/android-screenshot-evidence.md).
+Mevcut `web_evidence.response.html` / `.screenshot` alanlarını ve yalnız geçici
+`/api/v1/browser/deep` yolunu kullanın; extension V3/GCS yükleme yoluna geçmeyin.
+iOS'ta `WKWebView.takeSnapshot` ile yalnız web viewport'unu yakalayıp hassas kontrol
+bölgelerini PNG kodlamadan önce native piksellerde maskeleyin.
+Sabit cihaz boyutu, toolbar yüksekliği veya piksel oranı yazmayın. Snapshot'ın
+gerçek `CGImage` boyutunu ve o anda WebKit'in view/viewport dönüşümünü kullanın;
+scroll, pinch zoom ve farklı ekran yoğunlukları boyunca kontrol dikdörtgenlerini
+aynı görüntü koordinatlarına dönüştürün. Kırpılmış bitmap'in en/boy oranına göre
+maskeyi esnetmeyin. Android referansında DOMSnapshot bounds fiziksel layout
+pikselidir; CSS ölçüsü
+gibi okunursa yüksek dpi cihazlarda maskeler kayar. WebKit koordinatlarının
+birimini kendi API'sinden doğrulayın ve bu Android dönüşümünü körlemesine taşımayın.
+En az iki cihaz boyutu/yoğunluğu ve zoom/scroll örneklerinde alıcıdaki gerçek
+PNG'yi doğrulayın; form/frame/shadow canary pikselleri sıfır,
+kamuya açık marka ve metin görünür olmalı.
+Android'in geçici DOMSnapshot/DevTools istemcisi WebKit'e kopyalanamaz. Açık/kapalı shadow DOM, frame,
+scroll/zoom ve hareketli kontroller için public WebKit API'leriyle güvenilir
+maskeleme kurulamıyorsa görüntüyü göndermeyin ve sonucu unverified tutun. Private
+modda HTML/PNG yok; belge/sekme değişiminde yakalamayı iptal edin. Gerçek PNG'yi
+alıcıda çözerek maske piksellerini ve kalan kamuya açık görüntüyü doğrulayın.
+Swift testlerini, simulator ve cihaz sonucunu ayrı yazın. Bu metin bir iOS
+screenshot uygulaması veya cihaz kabul sonucu değildir.
+Mobil kanıt ayrımı için orchestrator değişikliği
+[PR #25](https://github.com/phishark-git/o-scan-api-orchestrator/pull/25)
+ile hazırlanmıştır; bu PR'ın üretime alınması henüz doğrulanmadı. Ephemeral deep
+isteklerinde global selective-payload bayrağı kapalı olsa bile LLM HTML alır ve
+screenshot almaz; VLM screenshot alır ve HTML almaz. Public gövdeye yeni bayrak
+eklemeyin. Gerçek servis alıcısında alanları test etmeden canlı davranış iddiası
+kurmayın.
 Önce `AGENTS.md`, `docs/security-architecture.md`, `docs/browser-account-implementation.md`,
 Mac dalındaki `docs/mac-validation-report.md` ve upstream AGENTS dosyasını okuyun.
 
@@ -51,8 +83,9 @@ sonuçlarında göstermeyin. Deep tamamlanana, iptal/hata olana veya sekme deği
 kadar sabit kalsın; retry sırasında yanıp sönmesin. Native API client dispatch
 olayına bağlayıp gecikmeli preflight/document/deep aşamalarıyla ayrı test edin.
 
-Android şu anda yalnız temizlenmiş gerçek HTML + URL gönderiyor; screenshot
-göndermiyor. Bu değişiklik screenshot hazır olduğu anlamına gelmez. Mac'te de
+`12ffd871` Android audit'i yalnız temizlenmiş gerçek HTML + URL gönderiyordu.
+Yeni masked-PNG çalışmasının güncel sonucu
+[screenshot raporunda](../docs/android-screenshot-evidence.md) tutuluyor. Mac'te
 WKWebView snapshot'ın form/frame/shadow/custom-control maskelemesini cihazda
 doğrulamadan screenshot göndermeyin; eksik kanıtla “tam/güvenli” sonucu üretmeyin.
 Outgoing links/header metadata ve gerçek redirect zinciri de kendi kanıtıyla

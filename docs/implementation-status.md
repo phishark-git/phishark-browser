@@ -3,8 +3,9 @@
 Current requested UI: scanning label is deep-only, beginning at HTTP dispatch and
 ending at the terminal result. Preflight/document loading/capture/cache remain
 quiet. [Current validation and evidence audit](android-deep-only-indicator.md)
-supersedes the earlier continuous-indicator preference. Android screenshot,
-complete page metadata and captured redirect-chain evidence remain incomplete.
+supersedes the earlier continuous-indicator preference. Android masked-PNG capture
+validation is tracked in [the screenshot report](android-screenshot-evidence.md).
+Complete page metadata and captured redirect-chain evidence remain incomplete.
 
 Gatekeeper routing: explicit completed allow now skips HTML capture and deep;
 unknown low scores still run consented deep. Shared JS/C++/Swift source and tests
@@ -12,7 +13,13 @@ are updated. Android build/device verification is recorded in
 [the routing report](gatekeeper-navigation-routing.md); Mac adapter checks remain
 independent and pending. Server contracts and deployment workflows are unchanged.
 
-Last reviewed: 2026-10-09. Status must be updated from actual command results.
+Last reviewed: 2026-10-10. Native masked-PNG source and x64 APK/AAB build are
+complete; real PNG transport/pixel tests passed on the isolated emulator in
+160/240 dpi configurations, including zoom/scroll, moving-control omission and
+private URL-only behavior. Literal local IPs skip scans outside fixture mode.
+Orchestrator projection PR #25
+is pushed with passing tests/CI and is not deployed. Mac capture is a handoff,
+not verified implementation. Status must be updated from actual command results.
 
 Android `9c6cbe6d`: one static English indicator spans preflight, document loading
 and deep; English default resources cover PhiShark-specific UI. The actual x64

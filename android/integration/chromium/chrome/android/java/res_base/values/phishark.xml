@@ -44,7 +44,7 @@
     <string name="phishark_ui_037">"Developer settings"</string>
     <string name="phishark_ui_038">"Your account is connected. Your session is stored securely on this device."</string>
     <string name="phishark_ui_039">"Sign in with your PhiShark account to connect protection without copying an API key. Your session will be remembered when you reopen the browser."</string>
-    <string name="phishark_ui_040">"I allow the full URL, including its query, and sanitized page content to be sent to PhiShark for analysis in normal mode. Incognito mode sends only the URL."</string>
+    <string name="phishark_ui_040">"I allow the full URL, including its query, sanitized page content, and a screenshot with sensitive input fields masked to be sent to PhiShark for analysis in normal mode. Incognito mode sends only the URL."</string>
     <string name="phishark_ui_041">"Continue browsing"</string>
     <string name="phishark_ui_042">"Sign in to PhiShark"</string>
     <string name="phishark_ui_043">"Skip for now"</string>
@@ -52,7 +52,7 @@
     <string name="phishark_ui_045">"Opening PhiShark sign-in…"</string>
     <string name="phishark_ui_046">"PhiShark API address (HTTPS)"</string>
     <string name="phishark_ui_047">"Personal API key (enter to replace)"</string>
-    <string name="phishark_ui_048">"I allow the full URL, including its query, and sanitized page content to be sent to PhiShark in normal mode. Incognito mode sends only the URL."</string>
+    <string name="phishark_ui_048">"I allow the full URL, including its query, sanitized page content, and a screenshot with sensitive input fields masked to be sent to PhiShark in normal mode. Incognito mode sends only the URL."</string>
     <string name="phishark_ui_049">"PhiShark API setup"</string>
     <string name="phishark_ui_050">"Save"</string>
     <string name="phishark_ui_051">"Cancel"</string>

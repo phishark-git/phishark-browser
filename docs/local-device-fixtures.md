@@ -22,6 +22,32 @@ file. Before live account acceptance, remove only this switch from
 absence, and restart the app process. Do not clear app data or the account vault.
 Do not print the whole command line or any stored credentials while diagnosing.
 
+On 2026-10-10 screenshot testing overlapped with human live browsing on
+`emulator-5554`. The still-enabled fixture switch made `CanScanTarget` reject
+public targets before any API request; blacklist enforcement consequently had
+no real preflight verdict to apply. The original command-line file was restored,
+the switch's absence verified, and the app restarted without clearing its account
+or data. Native blacklist policy tests still passed. This recovery confirms local
+configuration, not a successful authenticated production blacklist response.
+Further screenshot fixtures use a separate `phishark_capture_api35` AVD on
+`emulator-5556`; never enable fixture mode on the user's live-browsing emulator.
+
+`/pages/blacklist` returns a deliberately fake blacklist verdict, including for
+its loopback URL, to exercise the native navigation block. This does not mean
+that a local IP was classified by the real Gatekeeper. With fixture mode off,
+literal loopback/private/link-local IPs and local/metadata hostnames skip analysis
+and remain unverified without a threat dialog. Compiling fixture support alone
+must not grant a loopback exception; the runtime switch is also required.
+
+The final 2026-10-10 native screenshot build verified this distinction on-device:
+fixture mode returned 1 blacklist preflight, 0 deep and 0 document GETs, with the
+native block. After restoring the original flag file and restarting in normal
+mode, that same loopback page loaded (1 GET) with **0 additional preflight/deep**
+and no block dialog. This was a local-IP exclusion check, not a real threat-feed
+classification. The screenshot suite used two display/density configurations on
+the isolated AVD; received PNG pixel evidence is in
+[the screenshot report](android-screenshot-evidence.md).
+
 On 2026-10-09 the emulator still had this flag after the account build was
 installed. A signed-in public page therefore showed unverified before an API
 request could run. The flag was removed and the app restarted without clearing

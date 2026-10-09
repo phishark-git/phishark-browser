@@ -3,13 +3,17 @@
 import http from 'node:http';
 import {createHash,randomUUID} from 'node:crypto';
 import {pathToFileURL} from 'node:url';
+import {auditPNG} from './fixture-png-audit.mjs';
+import fs from 'node:fs';
 
 export const scenarios=['safe','preflight-warning','preflight-block','deep-warning','deep-block',
   'prompt-suspicious','prompt-malicious','degraded','negative','malformed','temporary',
   'auth','quota','configuration','capacity','stall','capture','popup','same-document',
-  'duplicate-history','duplicate-history-slow','handoff-slow','whitelist','blacklist'];
+  'duplicate-history','duplicate-history-slow','handoff-slow','whitelist','blacklist',
+  'screenshot','screenshot-scrolled','screenshot-zoomed','screenshot-moving'];
 
 function page(name) {
+  if(name.startsWith('screenshot'))return screenshotPage(name);
   const links=scenarios.map(x=>`<li><a href="/pages/${x}">${x}</a></li>`).join('');
   return `<!doctype html><html><head><meta name="viewport" content="width=device-width"><title>PhiShark fixture: ${name}</title></head>
 <body><h1>${name}</h1><p>Synthetic local acceptance fixture. Use API key fixture-only.</p>
@@ -39,6 +43,23 @@ if (${JSON.stringify(name)}.startsWith('duplicate-history')) {
 </script></body></html>`;
 }
 
+function screenshotPage(name) {
+  return `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=${name==='screenshot-zoomed'?1.5:1}"><title>PhiShark fixture: ${name}</title>
+<style>body{margin:8px}input,textarea,select,[contenteditable],[role=textbox]{background:#ff00ff;color:#00ffff;width:240px;font-size:16px}label{display:block;margin:6px}iframe{width:280px;height:60px}#brand{background:#0000ff;color:white;padding:12px}</style></head>
+<body><div style="height:${name==='screenshot-scrolled'?900:0}px"></div><div id="brand">PhiShark visual evidence fixture</div>
+<label>Email <input value="fixture-private-email"></label><label>Password <input type="password" value="fixture-private-password"></label>
+<textarea>fixture-private-textarea</textarea><select><option>fixture-private-select</option></select>
+<div contenteditable="true">fixture-private-editable</div><div role="textbox">fixture-private-role</div>
+<div id="open"></div><div id="closed"></div><custom-field></custom-field>
+<iframe src="/frame-color" title="Sensitive frame"></iframe><p>Public visual text must remain visible.</p>
+<script>
+for(const [id,mode] of [['open','open'],['closed','closed']])document.getElementById(id).attachShadow({mode}).innerHTML='<input style="background:#ff00ff;color:#00ffff;width:240px;height:24px" value="fixture-private-shadow">';
+document.querySelector('custom-field').attachShadow({mode:'closed'}).innerHTML='<div contenteditable style="background:#ff00ff;color:#00ffff;width:240px">fixture-private-custom</div>';
+${name==='screenshot-scrolled'?'scrollTo(0,900);':''}
+${name==='screenshot-moving'?"setInterval(()=>{document.querySelector('input').style.transform='translateX('+Math.random()*60+'px)'},5);":''}
+</script></body></html>`;
+}
+
 export function createFixtureServer({stallMs=30000}={}) {
   const stats={preflight:0,deep:0,privacyRejected:0,capacityRetries:0,
     pageGets:Object.fromEntries(scenarios.map(name=>[name,0])),redirectGets:0,
@@ -61,6 +82,7 @@ export function createFixtureServer({stallMs=30000}={}) {
         res.writeHead(302,{Location:route.pathname.endsWith('/2')?'/redirect/1':'/pages/safe?redirect=fixture'});return res.end();
       }
       if(route.pathname==='/frame'){res.writeHead(200,{'Content-Type':'text/html'});return res.end('<label>Frame input <input value="fixture-private-frame"></label>');}
+      if(route.pathname==='/frame-color'){res.writeHead(200,{'Content-Type':'text/html'});return res.end('<body style="margin:0;background:#ff00ff"><input value="fixture-private-frame"></body>');}
       const name=route.pathname.split('/')[2]||'safe';
       if(route.pathname!=='/'&&!scenarios.includes(name)){res.writeHead(404);return res.end();}
       stats.pageGets[name]++;
@@ -79,7 +101,7 @@ export function createFixtureServer({stallMs=30000}={}) {
     let payload;
     try {
       const parts=[];let bytes=0;
-      for await(const part of req){bytes+=part.length;if(bytes>1024*1024)throw new Error('size');parts.push(part);}
+      for await(const part of req){bytes+=part.length;if(bytes>6*1024*1024)throw new Error('size');parts.push(part);}
       payload=JSON.parse(Buffer.concat(parts).toString('utf8'));
     }catch{return send(res,400,{code:'FIXTURE_INVALID_BODY'});}
     if(req.headers['x-api-key']!=='fixture-only')return send(res,401,{code:'INVALID_API_KEY'});
@@ -113,6 +135,24 @@ export function createFixtureServer({stallMs=30000}={}) {
         containsScript:/<script\b/i.test(response.html??''),
         containsFrame:/<(?:iframe|frame)\b/i.test(response.html??''),
       };
+      if(response.fixture_capture_failure_step!==undefined)
+        stats.deepEvidence[scenario].captureFailureStep=response.fixture_capture_failure_step;
+      if(response.fixture_capture_viewport_before)stats.deepEvidence[scenario].captureViewport={
+        before:response.fixture_capture_viewport_before,after:response.fixture_capture_viewport_after,
+        width:response.fixture_capture_width,height:response.fixture_capture_height};
+      if(response.screenshot){
+        try{
+          stats.deepEvidence[scenario].png=auditPNG(response.screenshot,response.fixture_mask_regions??[]);
+          if(scenario.startsWith('screenshot')&&stats.deepEvidence[scenario].png.magentaPixels>0){
+            stats.privacyRejected++;return send(res,400,{code:'FIXTURE_UNMASKED_CANARY'});
+          }
+          // Opt-in, synthetic loopback fixtures only. Never save production evidence.
+          if(process.env.PHISHARK_FIXTURE_PNG_DIR&&scenario.startsWith('screenshot')){
+            fs.mkdirSync(process.env.PHISHARK_FIXTURE_PNG_DIR,{recursive:true});
+            fs.writeFileSync(`${process.env.PHISHARK_FIXTURE_PNG_DIR}/${scenario}.png`,Buffer.from(response.screenshot,'base64'));
+          }
+        }catch{stats.privacyRejected++;return send(res,400,{code:'FIXTURE_PNG_FAILURE'});}
+      }
     }
     if(scenario==='auth')return send(res,401,{code:'INVALID_API_KEY'});
     if(scenario==='quota')return send(res,429,{code:'QUOTA_EXCEEDED'});

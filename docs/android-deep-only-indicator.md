@@ -1,5 +1,10 @@
 # Deep-only scanning indicator and evidence audit
 
+This is the historical HTML-only audit. The subsequent native masked-PNG
+implementation, build and pending pixel acceptance are recorded in
+[the screenshot report](android-screenshot-evidence.md); server projection now
+also requires the separately reviewed orchestrator PR #25 rollout.
+
 The user's current preference supersedes the preflight-to-deep continuous
 indicator: show one static English label only after an actual deep request starts.
 Preflight, waiting for document load, evidence preparation and cache hits stay

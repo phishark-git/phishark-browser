@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-only
 #include "chrome/browser/phishark/navigation_throttle.h"
+#include "chrome/browser/phishark/masked_screenshot.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -56,7 +57,7 @@ constexpr char16_t kCaptureScript[] = uR"JS((() => {
   // An isolated world carries no API key. All live input values are discarded.
   const copy = document.documentElement.cloneNode(true);
   for (const element of copy.querySelectorAll('script,style,noscript,template')) element.remove();
-  for (const element of copy.querySelectorAll('input,textarea,select,button,[contenteditable]')) {
+  for (const element of copy.querySelectorAll('input,textarea,select,button,[contenteditable],[role="textbox"],[role="searchbox"],[role="combobox"]')) {
     for (const attribute of [...element.attributes]) {
       if (attribute.name !== 'type') element.removeAttribute(attribute.name);
     }
@@ -75,7 +76,19 @@ constexpr char16_t kCaptureScript[] = uR"JS((() => {
     }
   }
   const html = copy.outerHTML;
-  return html.length <= 1048576 ? html : null;
+  if (html.length > 1048576) return null;
+  const links = [];
+  for (const anchor of copy.querySelectorAll('a[href]')) {
+    if (links.length >= 500) break;
+    try {
+      const url = new URL(anchor.getAttribute('href'), document.baseURI);
+      if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) continue;
+      links.push({url: url.href, domain: url.hostname, title: (anchor.textContent || '').trim().slice(0, 300)});
+    } catch {}
+  }
+  const domains = [...new Set(links.map(link => link.domain))];
+  return {html, title: copy.querySelector('title')?.textContent || '',
+    outgoing_links: {count: links.length, domains_count: domains.length, domains, links}};
 })())JS";
 
 constexpr net::NetworkTrafficAnnotationTag kTraffic =
@@ -84,7 +97,7 @@ constexpr net::NetworkTrafficAnnotationTag kTraffic =
         sender: "PhiShark Browser protection"
         description: "Checks a document URL and optionally consented sanitized page evidence."
         trigger: "Main document navigation with a user-configured PhiShark API key."
-        data: "Full URL, personal API authentication header, optional sanitized HTML."
+        data: "Full URL, personal API authentication header, optional sanitized HTML and input-masked page PNG."
         destination: OTHER
         destination_other: "User configured PhiShark API service"
       }
@@ -107,9 +120,6 @@ bool UseLocalFixtures() {
 bool CanScanTarget(const GURL& target) {
   if (!target.SchemeIsHTTPOrHTTPS() || target.has_username() || target.has_password()) return false;
   if (UseLocalFixtures()) return target.host() == "127.0.0.1" && target.EffectiveIntPort() == 8765;
-#if BUILDFLAG(PHISHARK_ALLOW_LOOPBACK_TESTING)
-  if (target.host() == "127.0.0.1") return true;
-#endif
   auto host = target.host();
   if (host == "localhost" || host == "metadata" || host == "metadata.google.internal"
       || host == "instance-data" || host == "instance-data.ec2.internal"
@@ -185,6 +195,8 @@ class TabProtection final : public content::WebContentsObserver,
         content::WebContentsUserData<TabProtection>(*contents),
         session_(contents->GetBrowserContext()->IsOffTheRecord()) {}
   void Begin(GURL target) {
+    screenshot_capture_.reset();
+    deep_has_screenshot_ = false;
     ClearBody();
     detail_.clear();
     target_ = target.GetWithoutRef();
@@ -253,6 +265,7 @@ class TabProtection final : public content::WebContentsObserver,
   }
   void DocumentOnLoadCompletedInPrimaryMainFrame() override { Capture(); }
   void WebContentsDestroyed() override {
+    screenshot_capture_.reset();
     loader_.reset(); completions_.clear(); ClearBody(); cache_.clear(); session_.Close();
     weak_factory_.InvalidateWeakPtrs();
   }
@@ -290,15 +303,48 @@ class TabProtection final : public content::WebContentsObserver,
       detail_ = "Content analysis requires normal-mode consent; incognito mode checks URLs only.";
       session_.Unavailable(generation_); Update(Profile::kDeep, ""); return;
     }
-    const std::string* html = value.GetIfString();
+    const auto* captured = value.GetIfDict();
+    const std::string* html = captured ? captured->FindString("html") : nullptr;
     if (!html || html->empty() || html->size() > kMaxHtmlBytes) {
       detail_ = "Page content could not be captured safely or exceeded the size limit.";
       session_.Unavailable(generation_); Update(Profile::kDeep, ""); return;
     }
-    base::DictValue response; response.Set("html", *html); response.Set("url", target_.spec());
+    auto response = captured->Clone();
+    response.Set("url", target_.spec()); response.Set("final_url", target_.spec());
+    screenshot_capture_ = std::make_unique<ScreenshotCapture>(web_contents(), target_,
+        base::BindOnce(&TabProtection::ScreenshotReady, weak_factory_.GetWeakPtr(),
+                       generation, std::move(response)));
+    screenshot_capture_->Start();
+  }
+  void ScreenshotReady(uint64_t generation, base::DictValue response,
+                       MaskedScreenshot screenshot) {
+    screenshot_capture_.reset();
+    if (generation != generation_ || session_.verdict() == Verdict::kBlocked) return;
+    session_.SetConsent(Java_PhiSharkBridge_hasDeepConsent(base::android::AttachCurrentThread())
+        || UseLocalFixtures());
+    if (!session_.CanCapture() || committed_generation_ != generation_
+        || web_contents()->GetLastCommittedURL().GetWithoutRef() != target_) {
+      session_.Unavailable(generation_); Update(Profile::kDeep, ""); return;
+    }
+    deep_has_screenshot_ = !screenshot.png_base64.empty()
+        && web_contents()->GetVisibility() == content::Visibility::VISIBLE;
+    if (UseLocalFixtures()) {
+      response.Set("fixture_capture_failure_step", screenshot.failure_step);
+      response.Set("fixture_capture_viewport_before", std::move(screenshot.viewport_before));
+      response.Set("fixture_capture_viewport_after", std::move(screenshot.viewport_after));
+      response.Set("fixture_capture_width", screenshot.width);
+      response.Set("fixture_capture_height", screenshot.height);
+    }
+    if (deep_has_screenshot_) {
+      response.Set("screenshot", std::move(screenshot.png_base64));
+      // Only explicit synthetic fixtures expose geometry for pixel assertions.
+      if (UseLocalFixtures()) {
+        response.Set("fixture_mask_regions", std::move(screenshot.regions));
+      }
+    }
     base::DictValue evidence; evidence.Set("response", std::move(response));
-    // No screenshot is transmitted until native pixel masking is verified.
-    evidence.Set("capture_coverage", "partial_html_no_screenshot");
+    evidence.Set("capture_coverage", deep_has_screenshot_
+        ? "sanitized_html_masked_viewport_png" : "partial_html_no_screenshot");
     Start(Profile::kDeep, std::move(evidence));
   }
   void Start(Profile profile, std::optional<base::DictValue> evidence) {
@@ -490,11 +536,12 @@ class TabProtection final : public content::WebContentsObserver,
     if (settings_version_ != Java_PhiSharkBridge_getSettingsVersion(base::android::AttachCurrentThread())) {
       cache_.clear(); Unavailable(true); return;
     }
-    // Partial HTML cannot certify capture/visual privacy. Do not label it safe.
+    // A failed/unstable screenshot still cannot certify visual coverage.
     detail_.clear();
-    if (profile_ == Profile::kDeep && Decide(profile_, result) == Verdict::kSafe) {
+    if (profile_ == Profile::kDeep && !deep_has_screenshot_
+        && Decide(profile_, result) == Verdict::kSafe) {
       result.degraded = true;
-      detail_ = "Partial page content was analyzed; a complete security result is unavailable because screenshot capture has not been verified.";
+      detail_ = "Partial page content was analyzed; screenshot capture was unavailable or could not be masked reliably.";
     } else if (Decide(profile_, result) == Verdict::kUnverified) {
       detail_ = result.degraded ? "The analysis service could not complete some checks."
           : "The analysis result is insufficient for a decision.";
@@ -551,6 +598,8 @@ class TabProtection final : public content::WebContentsObserver,
   uint64_t generation_ = 0;
   uint64_t committed_generation_ = 0;
   uint64_t capture_started_generation_ = 0;
+  std::unique_ptr<ScreenshotCapture> screenshot_capture_;
+  bool deep_has_screenshot_ = false;
   uint64_t resolved_generation_ = 0;
   bool resolved_public_ = false;
   int64_t navigation_id_ = 0;

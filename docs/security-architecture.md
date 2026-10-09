@@ -45,9 +45,15 @@ ARM64 PhiShark APK/AAB built with the pre-account overlay; physical launch remai
 The separate Mac branch `9064f050` reports baseline/integrated simulator builds
 and 9 Swift tests passed using Xcode 26.6 experiment mode; native account login,
 pinned Xcode 26.5 and physical iPhone acceptance remain unverified. DNS enforcement,
-cross-tab request coalescing, complete address-bar UI and capture pixel masking
-remain incomplete. Partial HTML deep results cannot label a page safe; screenshots
-are omitted. The x64 fixture APK is a runnable prototype; full acceptance is pending.
+cross-tab request coalescing and complete address-bar UI remain incomplete.
+Partial HTML deep results cannot label a page safe. Native
+masked-PNG capture now compiles and builds, with failed/unstable captures omitted;
+received-image pixel acceptance passed targeted normal/zoom/scroll tests at
+160/240 dpi, with 16 opaque masks, no sensitive-control canary pixels and retained
+public branding. This is bounded emulator evidence, not arbitrary-site or physical
+device privacy acceptance.
+[Current screenshot validation](android-screenshot-evidence.md). The x64 fixture
+APK is a runnable prototype; full acceptance is pending.
 
 [Pinned integration points](native-integration-points.md) record the actual
 Chromium registry/no-URL-loader interfaces and Firefox action/async-response

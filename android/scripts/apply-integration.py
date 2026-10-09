@@ -126,10 +126,10 @@ def main():
         body = replace_once(body, '  defines = [ "ZLIB_CONST" ]',
             '  defines = [ "ZLIB_CONST" ]\n'
             '  if (is_android) {\n'
-            '    sources += [ "phishark/navigation_throttle.cc", "phishark/navigation_throttle.h", "phishark/verdict.cc", "phishark/verdict.h" ]\n'
+            '    sources += [ "phishark/navigation_throttle.cc", "phishark/navigation_throttle.h", "phishark/masked_screenshot.cc", "phishark/masked_screenshot.h", "phishark/verdict.cc", "phishark/verdict.h" ]\n'
             '  }', 'core defines')
         return replace_once(body, '  deps = [\n',
-            '  deps = [\n    ":phishark_buildflags",\n    "//crypto",\n', 'core dependencies')
+            '  deps = [\n    ":phishark_buildflags",\n    "//crypto",\n    "//ui/gfx/codec",\n', 'core dependencies')
 
     edit('chrome/browser/BUILD.gn', lambda text: gn_target(
         'import("//chrome/browser/phishark/features.gni")\n' + text, 'source_set("core")', core)

@@ -1,5 +1,46 @@
 # Cross-repository impact check
 
+## Mobile HTML / PNG evidence — 2026-10-10
+
+Original query `buildWebSubmoduleRequestBody screenshot captureWebEvidence`
+was verified against current browser, backend, orchestrator and analyzer source.
+The initial graph returned 70 connected nodes (31 displayed at 1,400 tokens).
+Providers already accept sanitized HTML/base64 PNG. The changed orchestrator
+forces scoped, non-mutating module projections for ephemeral deep only; Android
+adds native visible-surface capture/redaction. Existing extension/Playwright
+global-flag behavior, mobile public schemas, quotas and callback/persistence
+contracts are preserved. Backend/LLM/VLM require no source rollout for this change.
+Implementation order: orchestrator projection, Android capture, independent
+validation, Mac handoff. Deployment order: reviewed orchestrator workflow after
+explicit approval, then accepted clients. PR #25 CI passed; deployment remains
+pending and production configuration/provider retention remains unknown.
+
+Both changed repository code graphs were updated. Browser: 671 nodes / 1,388 raw
+edges, component 1,196 edges after 180 unresolved external endpoints were dropped.
+Orchestrator: 1,721 nodes / 4,622 raw edges, component 3,753 edges after 860
+unresolved external endpoints were dropped. Final workspace refresh rebuilt to
+13,939 nodes / 30,043 edges, zero aggregate dangling endpoints. The same impact query returned
+122 connected nodes (30 displayed at 1,400 tokens), including ScreenshotCapture,
+TabProtection, executor builders and selectWebEvidenceResponse.
+
+A concurrent aggregate refresh temporarily selected the separate
+`rendered-page-classification` orchestrator worktree. Only this task's browser
+and orchestrator components were reselected/refreshed, preserving unrelated
+component snapshots, and the query again resolved executor methods to
+`browser-orchestrator-20261009` (60b2ceb). Aggregate branch provenance can change
+with concurrent workspace work; current source and per-repository tests remain
+the acceptance evidence. No semantic completeness is claimed.
+
+Coverage remains incomplete: code-only updates omit document semantics, the
+orchestrator's 12 old semantic hyperedges were not preserved in its code-only
+component, four browser concepts lack source_file, and unaffected components
+retain mixed branch snapshots and old node IDs. The external Chromium checkout
+is not the overlay graph. Zero dangling endpoints does not prove complete
+coverage. Mac snapshot implementation/device tests and native PNG pixel acceptance
+are reported separately; no unresolved compatible consumer is silently
+presented as implemented. No VDS access, production operation or workflow change
+was performed for this evidence projection.
+
 Reviewed 2026-10-09. Initial graph queries preceded implementation. Paths were
 checked against current source, repository AGENTS, SYSTEM_MAP and the LLM
 integration inventory; inferred/ambiguous graph edges were treated as leads.
