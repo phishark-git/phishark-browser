@@ -21,6 +21,7 @@
 #include "base/task/single_thread_task_runner.h"
 #include "base/time/time.h"
 #include "content/public/browser/browser_context.h"
+#include "content/public/browser/document_user_data.h"
 #include "content/public/browser/navigation_handle.h"
 #include "content/public/browser/navigation_controller.h"
 #include "content/public/browser/navigation_throttle_registry.h"
@@ -118,6 +119,21 @@ bool CanScanTarget(const GURL& target) {
   return true;
 }
 
+// Socket evidence belongs to the committed document, not a navigation event.
+// Chromium keeps this through history.replaceState/BFCache and deletes it when
+// a different document commits, even if the RenderFrameHost is reused.
+class PublicDocumentConnection final
+    : public content::DocumentUserData<PublicDocumentConnection> {
+ public:
+  ~PublicDocumentConnection() override = default;
+ private:
+  friend content::DocumentUserData<PublicDocumentConnection>;
+  explicit PublicDocumentConnection(content::RenderFrameHost* frame)
+      : content::DocumentUserData<PublicDocumentConnection>(frame) {}
+  DOCUMENT_USER_DATA_KEY_DECL();
+};
+DOCUMENT_USER_DATA_KEY_IMPL(PublicDocumentConnection);
+
 class TabProtection final : public content::WebContentsObserver,
                             public content::WebContentsUserData<TabProtection> {
  public:
@@ -179,6 +195,12 @@ class TabProtection final : public content::WebContentsObserver,
   void DidFinishNavigation(content::NavigationHandle* handle) override {
     if (!handle->IsInPrimaryMainFrame() || !handle->HasCommitted()
         || handle->IsErrorPage() || !handle->GetURL().SchemeIsHTTPOrHTTPS()) return;
+    if (handle->GetNavigationId() == navigation_id_
+        && handle->GetURL().GetWithoutRef() == target_
+        && resolved_generation_ == generation_ && resolved_public_
+        && handle->GetRenderFrameHost()) {
+      PublicDocumentConnection::CreateForCurrentDocument(handle->GetRenderFrameHost());
+    }
     // Commit paths not covered by a throttle are observed explicitly.
     if (navigation_id_ != handle->GetNavigationId() || target_ != handle->GetURL().GetWithoutRef()) {
       Preflight(handle->GetURL(), handle->GetNavigationId(), base::BindOnce([](bool) {}));
@@ -207,13 +229,13 @@ class TabProtection final : public content::WebContentsObserver,
     if (!session_.CanCapture() || session_.verdict() == Verdict::kServiceError
         || !CanScanTarget(target_) || committed_generation_ != generation_
         || loader_ || web_contents()->GetLastCommittedURL().GetWithoutRef() != target_) return;
-    if (resolved_generation_ != generation_ || !resolved_public_) {
+    auto* frame = web_contents()->GetPrimaryMainFrame();
+    if (!frame || !frame->IsRenderFrameLive()) return;
+    if (!PublicDocumentConnection::GetForCurrentDocument(frame)) {
       detail_ = "Sayfanın genel internet bağlantısı doğrulanamadı; içerik analizi yapılmadı.";
       session_.Unavailable(generation_); Update(Profile::kDeep, ""); return;
     }
     if (capture_started_generation_ == generation_) return;
-    auto* frame = web_contents()->GetPrimaryMainFrame();
-    if (!frame) return;
     capture_started_generation_ = generation_;
     Java_PhiSharkBridge_setDeepPending(env, web_contents(), static_cast<int64_t>(generation_));
     frame->ExecuteJavaScriptInIsolatedWorld(kCaptureScript,
