@@ -7,6 +7,13 @@ runs succeeded, followed by 5/5 public smoke checks, including a valid synthetic
 S256 PKCE login start. Human account login/refresh and authenticated scan privacy
 acceptance remain unverified.
 
+Android follow-up: the user completed login; the emulator retained the account
+through app restarts and in-place updates. A leftover local-fixture runtime
+switch was removed. The x64 `326ae22f` build now preserves the URL-only result
+when content verification is incomplete; the real page displayed low URL risk
+with partial coverage. This does not establish successful deep analysis or refresh
+acceptance. See [runtime diagnosis](android-unverified-followup-20261009.md).
+
 | Gate | Status |
 | --- | --- |
 | Playwright implementation inspected | Complete; main and prompt-policy branches distinguished |
