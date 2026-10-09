@@ -173,7 +173,8 @@ class TabProtection final : public content::WebContentsObserver,
         static_cast<int>(session_.verdict()), static_cast<int64_t>(generation_),
         base::android::ConvertUTF8ToJavaString(env, score),
         base::android::ConvertUTF8ToJavaString(env, session_.last_safe_url()),
-        profile == Profile::kDeep, base::android::ConvertUTF8ToJavaString(env, detail_));
+        profile == Profile::kDeep, base::android::ConvertUTF8ToJavaString(env, detail_),
+        static_cast<int>(session_.url_verdict()));
   }
   void DidFinishNavigation(content::NavigationHandle* handle) override {
     if (!handle->IsInPrimaryMainFrame() || !handle->HasCommitted()

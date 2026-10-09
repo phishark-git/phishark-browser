@@ -57,13 +57,15 @@ public final class PhiSharkBridge {
         final String lastSafe;
         final boolean deep;
         final String detail;
+        final int urlVerdict;
         boolean warningAccepted;
         boolean serviceErrorShown;
         boolean deepPending;
-        State(int verdict, long generation, String score, String lastSafe, boolean deep, String detail) {
+        State(int verdict, long generation, String score, String lastSafe, boolean deep, String detail, int urlVerdict) {
             this.verdict = verdict; this.generation = generation;
             this.score = score; this.lastSafe = lastSafe; this.deep = deep;
             this.detail = detail;
+            this.urlVerdict = urlVerdict;
         }
     }
 
@@ -124,11 +126,11 @@ public final class PhiSharkBridge {
     @CalledByNative private static long getSettingsVersion() { return prefs().getLong(VERSION, 0); }
 
     @CalledByNative private static void updateState(@JniType("content::WebContents*") WebContents contents, int verdict,
-            long generation, String score, String lastSafe, boolean deep, String detail) {
+            long generation, String score, String lastSafe, boolean deep, String detail, int urlVerdict) {
         if (verdict < 0 || verdict >= LABELS.length || contents == null) return;
         State previous = STATES.get(contents);
         if (previous != null && generation < previous.generation) return;
-        STATES.put(contents, new State(verdict, generation, score, lastSafe, deep, detail));
+        STATES.put(contents, new State(verdict, generation, score, lastSafe, deep, detail, urlVerdict));
         for (PhiSharkBridge window : WINDOWS.values()) window.refresh();
     }
 
@@ -144,12 +146,20 @@ public final class PhiSharkBridge {
         for (PhiSharkBridge window : WINDOWS.values()) window.refresh();
     }
 
+    private static String statusLabel(State state) {
+        if (state == null) return "Sayfa açın";
+        if (state.deepPending) return (state.verdict == 2 ? "Uyarı · " : "") + "Derin analiz sürüyor";
+        if (state.verdict == 1 && !state.deep) return "URL kontrolü: düşük risk";
+        // A URL verdict is scoped context. It never overrides a deep block,
+        // warning or service error, nor turns incomplete capture into safe.
+        if (state.verdict == 4 && state.urlVerdict == 1) return "URL düşük risk · Kısmi kontrol";
+        if (state.verdict == 4 && state.urlVerdict == 2) return "URL uyarısı · Kısmi kontrol";
+        return LABELS[state.verdict];
+    }
+
     private void refresh() {
         WebContents contents = current(); State state = STATES.get(contents);
-        String label = "PhiShark · " + (state != null && state.deepPending
-                ? (state.verdict == 2 ? "Uyarı · " : "") + "Derin analiz sürüyor"
-                : state != null && state.verdict == 1 && !state.deep
-                ? "URL kontrolü: düşük risk" : state == null ? "Sayfa açın" : LABELS[state.verdict]);
+        String label = "PhiShark · " + statusLabel(state);
         badge.setText(label);
         int accent = state != null && state.verdict == 3 ? Color.rgb(255, 117, 117)
                 : state != null && (state.verdict == 2 || state.verdict == 5) ? Color.rgb(255, 202, 91)
@@ -224,8 +234,7 @@ public final class PhiSharkBridge {
         Activity owner = activity.get(); if (owner == null || owner.isFinishing()) return;
         State state = STATES.get(current());
         new AlertDialog.Builder(owner).setTitle("PhiShark Browser")
-                .setMessage("Durum: " + (state != null && state.verdict == 1 && !state.deep
-                        ? "URL kontrolü: düşük risk" : state == null ? "Henüz bir web sayfası kontrol edilmedi" : LABELS[state.verdict])
+                .setMessage("Durum: " + statusLabel(state)
                         + (state == null || state.score.isEmpty() ? "" : "\nRisk skoru: " + state.score)
                         + (state == null || state.detail.isEmpty() ? "" : "\n" + state.detail)
                         + "\n\n" + BrowserAccount.status()

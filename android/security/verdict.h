@@ -51,11 +51,13 @@ class NavigationSession {
   explicit NavigationSession(bool private_mode);
   uint64_t Begin(std::string canonical_url) {
     ++generation_; url_ = std::move(canonical_url); verdict_ = Verdict::kChecking;
+    url_verdict_ = Verdict::kUnverified;
     warning_accepted_ = false; return generation_;
   }
   bool Apply(uint64_t generation, Profile profile, const Result& result) {
     if (generation != generation_ || verdict_ == Verdict::kBlocked) return false;
     verdict_ = Decide(profile, result);
+    if (profile == Profile::kPreflight) url_verdict_ = verdict_;
     if (verdict_ == Verdict::kSafe && profile == Profile::kDeep) last_safe_url_ = url_;
     return true;
   }
@@ -70,13 +72,16 @@ class NavigationSession {
   }
   bool CanCapture() const { return consent_ && !private_mode_ && verdict_ != Verdict::kBlocked; }
   void SetConsent(bool consent) { consent_ = consent; }
-  void Close() { ++generation_; url_.clear(); last_safe_url_.clear(); verdict_ = Verdict::kUnverified; consent_ = false; }
+  void Close() { ++generation_; url_.clear(); last_safe_url_.clear(); verdict_ = Verdict::kUnverified; url_verdict_ = Verdict::kUnverified; consent_ = false; }
   Verdict verdict() const { return verdict_; }
+  // Retain the URL-only result as context, never as a replacement deep verdict.
+  Verdict url_verdict() const { return url_verdict_; }
   const std::string& last_safe_url() const { return last_safe_url_; }
  private:
   uint64_t generation_ = 0;
   bool private_mode_, consent_ = false, warning_accepted_ = false;
   Verdict verdict_ = Verdict::kUnverified;
+  Verdict url_verdict_ = Verdict::kUnverified;
   std::string url_, last_safe_url_;
 };
 }  // namespace phishark
