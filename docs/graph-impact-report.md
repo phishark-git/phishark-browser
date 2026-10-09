@@ -50,11 +50,16 @@ The grouped analyzers component was rebuilt from its 21 module snapshots after
 refreshing the six changed analyzer modules. The aggregate workspace graph was
 then rebuilt and the original query rerun.
 
-The final source/fixture rebuild produced a workspace graph of 12,814 nodes and
-28,339 edges, with zero post-build dangling endpoints. The broad original query
+The final source/fixture/Mac-helper rebuild produced a workspace graph of 12,819
+nodes and 28,346 edges, with zero post-build dangling endpoints. The broad original query
 was repeated against this refreshed graph and found 451 connected nodes; its CLI
 output was budget-truncated. Narrow source queries, rather than absence from the
 truncated output, determined the actual edit scope.
+
+The Mac handoff also repeated `iOS baseline bootstrap Fennec Swift Keychain`
+before and after the browser/component/workspace refresh. Its source-verified
+change scope is limited to the browser's own scripts and documentation; no
+server contract or imported upstream source was changed for this handoff.
 
 This impact check remains **incomplete for document semantics and unaffected
 branch snapshots**. Code-only updates do not refresh semantic document extraction;

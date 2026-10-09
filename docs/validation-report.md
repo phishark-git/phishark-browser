@@ -79,6 +79,14 @@ iOS: unchanged Fennec baseline and Swift tests need the user's MacBook, pinned
 Xcode 26.5/Swift 6.2 and device/signing verification. No IPA or successful Swift
 compilation is claimed from Windows.
 
+Mac handoff: `ios/scripts/mac-verify.sh` records the shared tests, independent
+Swift tests and unchanged Fennec simulator build separately. Its baseline helper
+uses a fresh, commit/tree-verified standalone upstream checkout so bootstrap's
+Git hook installation cannot affect the PhiShark repository. Shell syntax checks
+passed in WSL; the helper rejected Linux with exit 2 and saved its preflight
+failure report as expected. The eight shared JS tests passed again. These checks
+are not evidence of a Mac build; see [iOS instructions](../ios/README.md).
+
 NavigationThrottle/JNI and Firefox delegate integration, native HTTP/cache,
 consent/masking/capture, address-bar/security screens, bundle/package branding,
 telemetry/account/sync audit and actual browser-function acceptance remain
