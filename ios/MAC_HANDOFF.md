@@ -3,10 +3,11 @@
 Hazırlanma: 9 Ekim 2026. Bu belge Mac tarafında insan veya Codex tarafından
 izlenebilir. Gerçek test sonuçları henüz bekleniyor.
 
-Hesapla ilk kurulum önerisi ve Android/Playwright davranış farkları:
-[giriş ve marka incelemesi](../docs/login-branding-review.md). Mevcut Swift/API
-anahtarı sözleşmesi henüz hesap oturumuna geçirilmedi; eski mobil uygulamanın
-`io.phishark.app` callback'ini tarayıcı için yeniden kullanmayın.
+Güncel hesap/marka görevi: [Mac hesapla ilk giriş rehberi](MAC_ACCOUNT_ONBOARDING.md).
+Mac `9064f050` raporunda Fennec baseline ve güvenlik entegrasyonu Xcode 26.6 deney
+modunda derlenip açıldı. O çalışmayı koruyarak yeni rehberle devam edin; bu
+belgenin aşağıdaki baseline adımları geçmiş başlangıç talimatlarıdır. Ortak dal
+PKCE ve ayrı Keychain amaçlarını içerir; native iOS hesap adapter'ı hâlâ gereklidir.
 
 ## Hedef ve eşzamanlı çalışma
 
