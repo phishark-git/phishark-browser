@@ -113,3 +113,20 @@ ignored `.build/screenshot-evidence/` and `.build/screenshot-final-*-stats.json`
 The production browser never writes captured scan images to disk. Remaining
 navigation, cancellation, cross-origin and real-device coverage belongs in the
 wider acceptance suite; passing contract/unit tests are not substitutes for it.
+
+## Local handoff
+
+Build source: `f6810926`, pushed to `codex/browser-mvp`. The verified APK was
+installed with `adb install -r` on the original `emulator-5554` and launched;
+existing account/app data and tabs were preserved. Its fixture flag was verified
+absent after boot. The isolated test emulator's flag was also restored to off,
+its reverse removed, its process closed and the owned fixture server stopped.
+
+Development artifacts are kept in ignored `.build/artifacts/native-screenshot-20261010/`:
+
+- APK SHA-256: `d3223b0f5d87082db3c6fb836cae663a90eeda9aacd350d04d585e1789fe1d6e`.
+- AAB SHA-256: `4f5f45f89c7af7a1c9ed6d4c9b6b7dffadf8003922585a4a93cd045e8cc96dc9`.
+
+These are x64 development artifacts, not store-ready ARM64 releases. The local
+manifest binds artifacts to the tested source. Production evidence projection
+still requires review/approval and the official orchestrator workflow for PR #25.
