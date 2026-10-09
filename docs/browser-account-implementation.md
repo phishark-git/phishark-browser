@@ -102,3 +102,12 @@ workflow revisions, not the exact live HTTP response or unobserved runtime
 changes. No production request or VDS inspection was performed. Dashboard
 reconciliation `f0b17e6` passed 86 tests, serve-config validation and build;
 PR 29 is mergeable. Backend PRs 20/21 remain open with successful CI.
+
+Diagnostic-only Android follow-up `1456fe34`: x64 APK/AAB build passed in
+4m07s and the APK was installed over the test emulator app without clearing its
+data. APK SHA-256 `e4d907ad6d4a353ea3e6d730c6e06bb80c07e12b0f02e392f2d9e56418e4d89d`;
+AAB SHA-256 `5c898651930542db45668cabfb6343719798b4d6532063ecaea08f483659f659`.
+The browser contract suite passed 8 tests. No production login request was sent
+to exercise the new status message; live login remains unavailable for acceptance
+until the separately approved server rollout. This patch does not fix missing
+server routes by itself.
