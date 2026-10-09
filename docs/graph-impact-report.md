@@ -1,5 +1,19 @@
 # Cross-repository impact check
 
+## Blocked-result inspection — 2026-10-10
+
+Browser-only UI follow-up queried `ScreenshotCapture PublishRequestCounts showVerdict`
+before editing (127 connected nodes). Native risk dialogs now open the existing
+protection panel; API/result, credentials, capture, navigation block and provider
+contracts are unchanged. No server rollout is required. The x64 APK/AAB and local
+tests passed, and a live preflight-block panel confirmed score 100, URL POSTs 1,
+deep POSTs 0, cache/retries 0. The requested URL is not retained in repo evidence.
+Browser graph refreshed: 672 nodes / 1,391 raw edges. Its component and workspace
+were rebuilt without reselecting unaffected branch snapshots; workspace 13,940
+nodes / 30,046 edges, no aggregate dangling endpoints. Repeated query found 128
+connected nodes (10 displayed at 550 tokens). Semantic-document, external engine
+and mixed-branch limitations below still apply; no VDS access or deployment.
+
 ## Mobile HTML / PNG evidence — 2026-10-10
 
 Original query `buildWebSubmoduleRequestBody screenshot captureWebEvidence`

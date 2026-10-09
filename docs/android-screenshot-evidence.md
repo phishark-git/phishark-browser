@@ -130,3 +130,19 @@ Development artifacts are kept in ignored `.build/artifacts/native-screenshot-20
 These are x64 development artifacts, not store-ready ARM64 releases. The local
 manifest binds artifacts to the tested source. Production evidence projection
 still requires review/approval and the official orchestrator workflow for PR #25.
+
+## Inspecting blocked live results
+
+The native risk dialog now opens the existing account/protection panel without
+resuming the blocked navigation. This exposes the current result phase and
+navigation-local request/cache/retry counters even while the app menu is covered.
+No API, provider, persistence, capture or decision policy changes are involved.
+
+A user-requested live normal-mode check returned score 100 and a preflight block.
+The panel showed URL POSTs 1, content POSTs 0, cache hits 0 and retries 0, with the
+account connected. Consequently this particular navigation sent no HTML/PNG and
+did not produce a deep score. A preflight block is not deep/VLM acceptance proof.
+The requested target is intentionally not recorded in this public document.
+Validation: x64 APK/AAB build 4m12.63s; in-place installation and panel read passed;
+`npm test` 12/12, OAuth assertions 19/19, branding checks 5/5 passed. Native capture
+and backend code are unchanged, so earlier pixel tests retain their original scope.

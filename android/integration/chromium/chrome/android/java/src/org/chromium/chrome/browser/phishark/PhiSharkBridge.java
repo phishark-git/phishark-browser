@@ -237,6 +237,10 @@ public final class PhiSharkBridge {
                 state.warningAccepted = true;
             }
         });
+        // Keep the current result's phase/counts inspectable even when the
+        // blocking dialog covers the app menu. This does not resume navigation.
+        if (!serviceError) builder.setNeutralButton(text(R.string.phishark_ui_032),
+                (dialog, which) -> showPanel());
         if (serviceError) builder.setPositiveButton(text(R.string.phishark_ui_026), (dialog, which) -> showAccount(false));
         AlertDialog created = builder.create();
         created.setOnDismissListener(dialog -> {
