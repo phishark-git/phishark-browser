@@ -2,6 +2,13 @@
 
 Last reviewed: 2026-10-09. Status must be updated from actual command results.
 
+Android `d1aebded`: per-navigation API attempt/cache/retry counters and distinct
+URL/content wait labels compiled, built and passed targeted emulator checks.
+Panel counts matched synthetic server counts, including same-document events,
+capacity retries and cached reload. Stalled responses completed as unverified
+with the indicator cleared. See [validation and limits](android-request-observability.md).
+This does not prove live production request totals or iOS behavior.
+
 [Production rollout](production-rollout-20261009.md): all 11 official deployment
 runs succeeded, followed by 5/5 public smoke checks, including a valid synthetic
 S256 PKCE login start. Human account login/refresh and authenticated scan privacy

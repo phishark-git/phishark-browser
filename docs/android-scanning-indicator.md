@@ -1,5 +1,10 @@
 # Discreet active-scan indicator
 
+Follow-up: the current APK distinguishes address checking from content analysis
+and exposes memory-only request counts in the panel. See
+[request observability](android-request-observability.md). The measurements below
+describe the original `6f9f1da1` indicator build.
+
 User preference: retain quiet completed results, but make an ongoing analysis
 visible so users know to wait. This is an informational indicator, not a new
 navigation or form-submission gate. Existing risk warnings and blocks remain.
