@@ -6,7 +6,9 @@ personal production key or real page evidence. A connected Android device can
 use an explicitly configured development build plus `adb reverse tcp:8765
 tcp:8765`; a Mac simulator can run the same fixture server locally. Production
 networking must stay HTTPS-only; loopback HTTP is a test exception, not release
-configuration. No device connection or installation has been performed yet.
+configuration. The task-local Windows emulator has installed baseline comparison
+packages and launched the locally built x64 baseline; actual PhiShark navigation
+tests remain pending the integrated APK build.
 
 Open `http://127.0.0.1:8765/`. Pages cover score/prompt/degraded/error scenarios,
 two-hop redirects, popup/new tab, same-document history and anchors, downloads,
@@ -19,7 +21,10 @@ separate-origin frame fixture for cross-origin acceptance on the device.
 
 The fake API uses the real ephemeral paths/envelope and returns deterministic
 decisions, one capacity retry, quota/auth/configuration/transient failures,
-malformed JSON or a stalled response body. `/stats` reports numeric counts only.
+malformed JSON or a stalled response body. `/stats` reports numeric counts,
+including page GET counters indexed only by known synthetic scenario names and
+redirect check/request totals. It can demonstrate that a preflight block
+prevented the document GET; no target string is retained.
 There are no request/payload/URL logs or scan records; retry bookkeeping is an
 in-memory digest and disappears when the fixture closes. No real model,
 decision-maker, database, threat feed or production privacy claim is involved.

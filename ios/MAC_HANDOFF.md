@@ -12,7 +12,7 @@ Android derlemesinin bitmesini beklemek gerekmiyor.
 
 | Çalışma | Sorumlu ortam | Şu anki durum |
 | --- | --- | --- |
-| Chromium/Cromite ARM64 APK ve AAB başlangıç derlemesi | Windows / WSL | Derleme başlatıldı; başarılı çıktı henüz kaydedilmedi |
+| Chromium/Cromite başlangıç derlemesi | Windows / WSL | ARM64 APK/AAB derlendi; emülatörün ARM çevirisinde açılış başarısız. Yerel x64 APK/AAB derlendi, emülatörde test sayfası açıldı. PhiShark entegrasyonu derleniyor |
 | Ortak sözleşme ve sunucu/provider değişiklikleri | Windows çalışma dalları | Pushlandı; deployment yapılmadı |
 | Swift paketinin gerçek derleme ve testleri | Mac | Bekleniyor |
 | Fennec simulator derlemesi ve açılışı | Mac | Bekleniyor |

@@ -70,10 +70,13 @@ production database or hosted model calls.
 
 Android: Chromium 153.0.8010.37 synced, upstream Cromite patches applied, Linux
 dependencies/hooks installed and matching PGO profiles downloaded. ARM64
-`chrome_public_apk` and `chrome_public_bundle` are compiling. Initial real Windows
+`chrome_public_apk` and `chrome_public_bundle` built successfully. Initial real Windows
 host free space was about 250 GB; it remains monitored during the build. The WSL
-virtual disk's reported capacity is not the host SSD capacity. No completed APK,
-AAB or device launch is recorded yet.
+virtual disk's reported capacity is not the host SSD capacity. The ARM64 APK
+installed but crashed in the emulator's ARM translation JNI path; the official
+pinned ARM64 APK failed on the same path. Both the official x64 APK and the local
+unchanged x64 baseline launched and opened the fixture page. See artifact hashes and
+launch results in [Android emulator evidence](android-emulator-validation.md).
 
 iOS: unchanged Fennec baseline and Swift tests need the user's MacBook, pinned
 Xcode 26.5/Swift 6.2 and device/signing verification. No IPA or successful Swift
@@ -87,11 +90,17 @@ passed in WSL; the helper rejected Linux with exit 2 and saved its preflight
 failure report as expected. The eight shared JS tests passed again. These checks
 are not evidence of a Mac build; see [iOS instructions](../ios/README.md).
 
-NavigationThrottle/JNI and Firefox delegate integration, native HTTP/cache,
-consent/masking/capture, address-bar/security screens, bundle/package branding,
-telemetry/account/sync audit and actual browser-function acceptance remain
-pending baseline launch. The independent security sources do not implement these
-engine hooks. See [device acceptance](device-acceptance.md).
+Android NavigationThrottle/JNI, native HTTP/cache, consent, partial HTML capture,
+native security dialogs and branding were applied after the local x64 baseline launch. Their
+C++ and Java sources passed compatibility compilation against pinned Chromium.
+The actual vault source separately passed 16 Android instrumentation assertions
+across two processes, including Keystore persistence and authenticated tamper
+rejection. Neither result validates the integrated browser. GN generation for
+the actual PhiShark package passed; the integrated build and launch remain pending.
+Screenshot masking, complete capture, cross-tab request coalescing, final
+address-bar integration, Firefox delegate integration, telemetry/account/sync
+audit and actual browser-function acceptance remain incomplete. See
+[device acceptance](device-acceptance.md).
 
 Live proxy/APM/module retention, active profile flags, internal token setup,
 external-provider settings and deployment topology are unknown. Source changes

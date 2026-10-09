@@ -30,7 +30,9 @@ document.getElementById('shadow').attachShadow({mode:'open'}).innerHTML='<label>
 }
 
 export function createFixtureServer({stallMs=30000}={}) {
-  const stats={preflight:0,deep:0,privacyRejected:0,capacityRetries:0};
+  const stats={preflight:0,deep:0,privacyRejected:0,capacityRetries:0,
+    pageGets:Object.fromEntries(scenarios.map(name=>[name,0])),redirectGets:0,
+    redirectPreflights:0};
   const capacitySeen=new Set();
   const send=(res,status,body)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(body));};
   const server=http.createServer(async(req,res)=>{
@@ -39,11 +41,13 @@ export function createFixtureServer({stallMs=30000}={}) {
       if(route.pathname==='/stats')return send(res,200,stats);
       if(route.pathname==='/download'){res.writeHead(200,{'Content-Type':'text/plain','Content-Disposition':'attachment; filename="fixture.txt"'});return res.end('Synthetic download fixture\n');}
       if(/^\/redirect\/[12]$/.test(route.pathname)){
+        stats.redirectGets++;
         res.writeHead(302,{Location:route.pathname.endsWith('/2')?'/redirect/1':'/pages/safe?redirect=fixture'});return res.end();
       }
       if(route.pathname==='/frame'){res.writeHead(200,{'Content-Type':'text/html'});return res.end('<label>Frame input <input value="fixture-private-frame"></label>');}
       const name=route.pathname.split('/')[2]||'safe';
       if(route.pathname!=='/'&&!scenarios.includes(name)){res.writeHead(404);return res.end();}
+      stats.pageGets[name]++;
       res.writeHead(200,{'Content-Type':'text/html; charset=utf-8','Set-Cookie':'fixture-session=fixture-private-cookie; HttpOnly; SameSite=Lax','Cache-Control':'no-store'});
       return res.end(page(name));
     }
@@ -67,7 +71,9 @@ export function createFixtureServer({stallMs=30000}={}) {
     }
     if(deep&&!payload.web_evidence?.response?.html&&!payload.web_evidence?.response?.screenshot)return send(res,400,{code:'FIXTURE_EVIDENCE_REQUIRED'});
     stats[deep?'deep':'preflight']++;
-    const scenario=target.pathname.split('/')[2]||'safe';
+    const redirectTarget=/^\/redirect\/[12]$/.test(target.pathname);
+    const scenario=redirectTarget?'safe':target.pathname.split('/')[2]||'safe';
+    if(redirectTarget&&!deep)stats.redirectPreflights++;
     if(!scenarios.includes(scenario))return send(res,400,{code:'FIXTURE_SCENARIO'});
     if(scenario==='auth')return send(res,401,{code:'INVALID_API_KEY'});
     if(scenario==='quota')return send(res,429,{code:'QUOTA_EXCEEDED'});

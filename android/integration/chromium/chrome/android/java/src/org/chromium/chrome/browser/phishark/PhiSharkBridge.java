@@ -1,0 +1,230 @@
+// SPDX-License-Identifier: GPL-3.0-only
+package org.chromium.chrome.browser.phishark;
+
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.SharedPreferences;
+import android.graphics.Color;
+import android.text.InputType;
+import android.view.Gravity;
+import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import java.lang.ref.WeakReference;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.WeakHashMap;
+import org.jni_zero.CalledByNative;
+import org.jni_zero.JniType;
+import org.chromium.base.ContextUtils;
+import org.chromium.chrome.browser.ActivityTabProvider;
+import org.chromium.chrome.browser.tab.Tab;
+import org.chromium.content_public.browser.LoadUrlParams;
+import org.chromium.content_public.browser.WebContents;
+import io.phishark.browser.security.ApiKeyVault;
+
+/** Browser-process UI and vault access; this class is never installed as a JS interface. */
+public final class PhiSharkBridge {
+    private static final String BASE = "phishark.api_base";
+    private static final String CONSENT = "phishark.deep_consent.v1";
+    private static final String VERSION = "phishark.settings_version";
+    private static final String[] LABELS = {"Kontrol ediliyor", "Güvenli", "Uyarı",
+            "Engellendi", "Kontrol edilemedi", "Kurulum / hizmet hatası"};
+    private static final WeakHashMap<WebContents, State> STATES = new WeakHashMap<>();
+    private static final WeakHashMap<Activity, PhiSharkBridge> WINDOWS = new WeakHashMap<>();
+    private final WeakReference<Activity> activity;
+    private final ActivityTabProvider tabs;
+    private final TextView badge;
+    private ActivityTabProvider.ActivityTabTabObserver tabObserver;
+    private AlertDialog verdictDialog;
+    private WebContents dialogContents;
+    private long dialogGeneration = -1;
+
+    private static final class State {
+        final int verdict;
+        final long generation;
+        final String score;
+        final String lastSafe;
+        final boolean deep;
+        boolean warningAccepted;
+        boolean serviceErrorShown;
+        boolean deepPending;
+        State(int verdict, long generation, String score, String lastSafe, boolean deep) {
+            this.verdict = verdict; this.generation = generation;
+            this.score = score; this.lastSafe = lastSafe; this.deep = deep;
+        }
+    }
+
+    private PhiSharkBridge(Activity owner, ActivityTabProvider provider) {
+        activity = new WeakReference<>(owner); tabs = provider;
+        badge = new TextView(owner);
+        badge.setTextSize(10); badge.setPadding(10, 4, 10, 4);
+        badge.setTextColor(Color.WHITE); badge.setBackgroundColor(Color.rgb(26, 62, 87));
+        badge.setContentDescription("PhiShark güvenlik paneli");
+        badge.setOnClickListener(view -> showPanel());
+        FrameLayout content = owner.findViewById(android.R.id.content);
+        FrameLayout.LayoutParams layout = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP | Gravity.END);
+        layout.topMargin = (int) (56 * owner.getResources().getDisplayMetrics().density);
+        content.addView(badge, layout);
+        // The activity owns the observer and destroys it with its tab provider.
+        tabObserver = new ActivityTabProvider.ActivityTabTabObserver(tabs) {
+            @Override protected void onObservingDifferentTab(Tab tab) { refresh(); }
+        };
+        refresh();
+    }
+
+    public static void install(Activity owner, ActivityTabProvider tabs) {
+        if (!WINDOWS.containsKey(owner)) WINDOWS.put(owner, new PhiSharkBridge(owner, tabs));
+    }
+
+    public static void uninstall(Activity owner) {
+        PhiSharkBridge bridge = WINDOWS.remove(owner);
+        if (bridge == null) return;
+        bridge.tabObserver.destroy();
+        if (bridge.verdictDialog != null) bridge.verdictDialog.dismiss();
+        if (bridge.badge.getParent() instanceof ViewGroup) {
+            ((ViewGroup) bridge.badge.getParent()).removeView(bridge.badge);
+        }
+        bridge.dialogContents = null;
+    }
+
+    private static SharedPreferences prefs() { return ContextUtils.getAppSharedPreferences(); }
+    private static ApiKeyVault vault() { return new ApiKeyVault(ContextUtils.getApplicationContext()); }
+
+    @CalledByNative private static String getApiBase() { return prefs().getString(BASE, ""); }
+    @CalledByNative private static byte[] getApiKey() {
+        try { return vault().load(); } catch (Exception ignored) { return null; }
+    }
+    @CalledByNative private static boolean hasDeepConsent() { return prefs().getBoolean(CONSENT, false); }
+    @CalledByNative private static long getSettingsVersion() { return prefs().getLong(VERSION, 0); }
+
+    @CalledByNative private static void updateState(@JniType("content::WebContents*") WebContents contents, int verdict,
+            long generation, String score, String lastSafe, boolean deep) {
+        if (verdict < 0 || verdict >= LABELS.length || contents == null) return;
+        State previous = STATES.get(contents);
+        if (previous != null && generation < previous.generation) return;
+        STATES.put(contents, new State(verdict, generation, score, lastSafe, deep));
+        for (PhiSharkBridge window : WINDOWS.values()) window.refresh();
+    }
+
+    private WebContents current() {
+        Tab tab = tabs.get(); return tab == null ? null : tab.getWebContents();
+    }
+
+    @CalledByNative private static void setDeepPending(
+            @JniType("content::WebContents*") WebContents contents, long generation) {
+        State state = STATES.get(contents);
+        if (state == null || state.generation != generation || state.verdict == 3) return;
+        state.deepPending = true;
+        for (PhiSharkBridge window : WINDOWS.values()) window.refresh();
+    }
+
+    private void refresh() {
+        WebContents contents = current(); State state = STATES.get(contents);
+        badge.setText("PhiShark · " + (state != null && state.deepPending
+                ? (state.verdict == 2 ? "Uyarı · " : "") + "Derin analiz sürüyor"
+                : state != null && state.verdict == 1 && !state.deep
+                ? "URL kontrolü: düşük risk" : LABELS[state == null ? 4 : state.verdict]));
+        if (verdictDialog != null && (contents != dialogContents || state == null
+                || state.generation != dialogGeneration)) {
+            verdictDialog.dismiss(); verdictDialog = null;
+        }
+        if (state != null && (state.verdict == 3
+                || state.verdict == 2 && state.deep && !state.warningAccepted
+                || state.verdict == 5 && !state.serviceErrorShown)) showVerdict(contents, state);
+    }
+
+    private void returnToSafety(WebContents contents, State expected) {
+        if (contents == null || STATES.get(contents) != expected) return;
+        String safe = expected.lastSafe.isEmpty() ? "chrome://newtab/" : expected.lastSafe;
+        contents.getNavigationController().loadUrl(new LoadUrlParams(safe));
+    }
+
+    private void showVerdict(WebContents contents, State state) {
+        Activity owner = activity.get();
+        if (owner == null || owner.isFinishing() || verdictDialog != null) return;
+        dialogContents = contents; dialogGeneration = state.generation;
+        boolean serviceError = state.verdict == 5;
+        AlertDialog.Builder builder = new AlertDialog.Builder(owner)
+                .setTitle("PhiShark · " + LABELS[state.verdict])
+                .setMessage(serviceError ? "API kurulumu veya hizmeti doğrulanamadı. Bu URL güvenli olarak onaylanmadı."
+                        : state.score.isEmpty() ? "Bu gezinme güvenlik kontrolüyle değerlendirildi."
+                        : "Risk skoru: " + state.score)
+                .setCancelable(serviceError)
+                .setNegativeButton(serviceError ? "Kapat" : "Güvenliğe dön", (dialog, which) -> {
+                    if (!serviceError) returnToSafety(contents, state);
+                });
+        // Only warnings can be continued. The native block has no override.
+        if (state.verdict == 2) builder.setPositiveButton("Bu gezinme için devam et", (dialog, which) -> {
+            if (STATES.get(contents) == state) {
+                state.warningAccepted = true;
+            }
+        });
+        if (serviceError) builder.setPositiveButton("API ayarları", (dialog, which) -> showSettings());
+        AlertDialog created = builder.create();
+        created.setOnDismissListener(dialog -> {
+            if (verdictDialog == created) { verdictDialog = null; dialogContents = null; }
+        });
+        verdictDialog = created; verdictDialog.show();
+        if (serviceError) state.serviceErrorShown = true;
+    }
+
+    private void showPanel() {
+        Activity owner = activity.get(); if (owner == null || owner.isFinishing()) return;
+        State state = STATES.get(current());
+        new AlertDialog.Builder(owner).setTitle("PhiShark Browser")
+                .setMessage("Durum: " + (state != null && state.verdict == 1 && !state.deep
+                        ? "URL kontrolü: düşük risk" : LABELS[state == null ? 4 : state.verdict])
+                        + (state == null || state.score.isEmpty() ? "" : "\nRisk skoru: " + state.score)
+                        + "\n\nGizli modda yalnız URL kontrolü yapılır. API kurulumunu tamamlamadan koruma etkin değildir.")
+                .setPositiveButton("API ayarları", (dialog, which) -> showSettings())
+                .setNegativeButton("Kapat", null).show();
+    }
+
+    private void showSettings() {
+        Activity owner = activity.get(); if (owner == null || owner.isFinishing()) return;
+        LinearLayout form = new LinearLayout(owner); form.setOrientation(LinearLayout.VERTICAL);
+        form.setPadding(24, 16, 24, 16);
+        EditText base = new EditText(owner); base.setHint("PhiShark API adresi (HTTPS)");
+        base.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
+        base.setText(getApiBase()); form.addView(base);
+        EditText key = new EditText(owner); key.setHint("Kişisel API anahtarı (değiştirmek için gir)");
+        key.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        form.addView(key);
+        CheckBox consent = new CheckBox(owner);
+        consent.setText("Normal modda tam URL'nin query dahil ve temizlenmiş sayfa içeriğinin PhiShark'a gönderilmesine izin veriyorum. Gizli mod yalnız URL gönderir.");
+        consent.setChecked(hasDeepConsent()); form.addView(consent);
+        AlertDialog dialog = new AlertDialog.Builder(owner).setTitle("PhiShark API kurulumu")
+                .setView(form).setPositiveButton("Kaydet", null).setNegativeButton("İptal", null)
+                .setNeutralButton("Anahtarı sil", (d, which) -> {
+                    try { vault().clear(); prefs().edit().remove(CONSENT)
+                            .putLong(VERSION, getSettingsVersion() + 1).apply(); }
+                    catch (Exception ignored) { badge.setText("PhiShark · Anahtar silinemedi"); }
+                }).create();
+        dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
+            byte[] bytes = null;
+            try {
+                URI uri = new URI(base.getText().toString().trim());
+                if (uri.getHost() == null || uri.getUserInfo() != null || uri.getQuery() != null
+                        || uri.getFragment() != null || (!"https".equals(uri.getScheme())
+                        && !("http".equals(uri.getScheme()) && "127.0.0.1".equals(uri.getHost())))) {
+                    base.setError("Geçerli bir HTTPS API adresi girin"); return;
+                }
+                if (key.length() > 0) {
+                    bytes = key.getText().toString().getBytes(java.nio.charset.StandardCharsets.UTF_8);
+                    vault().save(bytes);
+                }
+                prefs().edit().putString(BASE, uri.toString()).putBoolean(CONSENT, consent.isChecked())
+                        .putLong(VERSION, getSettingsVersion() + 1).apply();
+                key.setText(""); dialog.dismiss();
+            } catch (Exception ignored) { key.setError("Ayarlar kaydedilemedi"); }
+            finally { if (bytes != null) Arrays.fill(bytes, (byte) 0); }
+        }));
+        dialog.show();
+    }
+}

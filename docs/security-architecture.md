@@ -22,7 +22,17 @@ Caches are memory-only, per normal/private session: preflight 600 seconds and de
 
 ## Current acceptance boundary
 
-The JS code is an executable reference, not the app's transport. C++ policy is compiled and tested independently. Keystore compiled against the Chromium SDK but awaits device verification; the Swift package awaits Mac compilation. Throttle/delegate wiring, DNS enforcement, native evidence capture, actual UI, in-memory native caches and secure native networking remain gated on successful upstream builds. No APK/AAB/IPA is claimed yet.
+The JS code is an executable reference. Android's applied overlay owns native
+throttle/commit observers, bounded HTTPS transport, per-tab memory caches,
+generation cancellation, JNI vault access and a native status/settings/dialog UI.
+Its C++ and Java source compile checks passed against the actual Chromium SDK;
+it has not yet passed APK integration/device tests. C++ policy is tested
+independently. The unmodified ARM64 APK/AAB built but failed emulator launch;
+the local native x64 baseline built and loaded the fixture page. The integrated
+PhiShark build is running. Swift awaits Mac compilation. DNS enforcement,
+cross-tab request coalescing, complete address-bar UI and capture pixel masking
+remain incomplete. Partial HTML deep results cannot label a page safe; screenshots
+are omitted. No runnable PhiShark APK/AAB/IPA is claimed yet.
 
 [Pinned integration points](native-integration-points.md) record the actual
 Chromium registry/no-URL-loader interfaces and Firefox action/async-response

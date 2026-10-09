@@ -35,6 +35,10 @@ test('local HTTP fixtures exercise real transport, verdicts, privacy and stalled
   assert.equal(cookieLeak.status,400);assert.equal(fixture.stats.privacyRejected,2);
   const redirect=await fetch(baseURL+'/redirect/2');
   assert.equal(new URL(redirect.url).pathname,'/pages/safe');
+  assert.equal(fixture.stats.redirectGets,2);
+  assert.equal(fixture.stats.pageGets['preflight-block'],0);
+  assert.equal((await client.scan(profiles.preflight,`${baseURL}/redirect/2`)).policy,'safe');
+  assert.equal(fixture.stats.redirectPreflights,1);
   const capture=await(await fetch(baseURL+'/pages/capture')).text();
   assert.ok(capture.includes('attachShadow'));assert.ok(capture.includes('iframe'));assert.ok(capture.includes('contenteditable'));
   assert.equal((await client.scan(profiles.preflight,`${baseURL}/pages/safe`,{privateMode:true})).policy,'safe');

@@ -2,6 +2,14 @@
 set -euo pipefail
 repo_root=$(cd "$(dirname "$0")/../.." && pwd)
 build_root=${1:?Usage: baseline.sh /absolute/Linux/build-root}
+architecture=${2:-arm64}
+jobs=${3:-16}
+[[ "$jobs" =~ ^[1-9][0-9]?$ ]] && (( jobs <= 32 )) || { echo 'Build jobs must be 1–32'; exit 2; }
+case "$architecture" in
+ arm64) output=out/phishark_baseline ;;
+ x64) output=out/phishark_x64_baseline ;;
+ *) echo 'Supported baseline architectures: arm64, x64'; exit 2 ;;
+esac
 [[ "$build_root" = /* && "$build_root" != /mnt/* ]] || { echo 'Use a Linux filesystem build root, not NTFS'; exit 2; }
 version=$(tr -d '\r\n' < "$repo_root/android/upstream/build/RELEASE")
 mkdir -p "$build_root"
@@ -85,5 +93,5 @@ for pgo_target in android-arm32 android-desktop-arm64 android-desktop-x64; do
   python3 tools/update_pgo_profiles.py --target="$pgo_target" update --gs-url-base=chromium-optimization-profiles/pgo_profiles
  fi
 done
-gn gen out/phishark_baseline --args="target_os=\"android\" $(cat "$repo_root/android/upstream/build/cromite.gn_args") target_cpu=\"arm64\" is_debug=false"
-autoninja -C out/phishark_baseline chrome_public_apk chrome_public_bundle -j 16
+gn gen "$output" --args="target_os=\"android\" $(cat "$repo_root/android/upstream/build/cromite.gn_args") target_cpu=\"$architecture\" is_debug=false"
+autoninja -C "$output" chrome_public_apk chrome_public_bundle -j "$jobs"

@@ -1,7 +1,8 @@
 # Pinned native integration points
 
-Inspected source on 2026-10-09; **hooks are not implemented yet**. The baseline
-build/launch gate remains in force. Re-check these interfaces when updating pins.
+Inspected source on 2026-10-09; Android hooks are applied in the external-source
+checkout after its local x64 baseline launch passed. Integrated device verification
+and iOS hooks remain pending. Re-check these interfaces when updating pins.
 Native credentials and decisions belong to browser processes, not page scripts.
 
 ## Android Chromium 153.0.8010.37 with pinned Cromite patches
@@ -31,7 +32,8 @@ safe-browsing interactions. Only primary main-frame HTTP(S) targets enter this
 security pipeline; native/internal security pages need a trusted exclusion.
 Deep capture follows a committed page with consent, normalized capture formats,
 input masking and the same navigation generation. API key JNI access must stay
-outside renderer bridges. Package/brand and upstream service changes are pending.
+outside renderer bridges. PhiShark package/label/icon changes and disabling the
+Cromite APK updater are applied; the wider upstream service audit remains pending.
 
 ## Firefox iOS firefox-v157.1
 

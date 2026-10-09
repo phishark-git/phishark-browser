@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="io.phishark.browser.vaulttests">
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="35" />
+    <!-- No Internet permission; this app only tests its own UID-scoped vault. -->
+    <application android:label="PhiShark Keystore tests" android:allowBackup="false" />
+    <instrumentation android:name="io.phishark.browser.vaulttests.VaultInstrumentation"
+        android:targetPackage="io.phishark.browser.vaulttests"
+        android:label="PhiShark Keystore device tests" />
+</manifest>

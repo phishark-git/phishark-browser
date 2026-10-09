@@ -50,8 +50,8 @@ The grouped analyzers component was rebuilt from its 21 module snapshots after
 refreshing the six changed analyzer modules. The aggregate workspace graph was
 then rebuilt and the original query rerun.
 
-The final source/fixture/Mac-helper rebuild produced a workspace graph of 12,819
-nodes and 28,346 edges, with zero post-build dangling endpoints. The broad original query
+The subsequent Android overlay/source/fixture rebuild produced a workspace graph of 12,988
+nodes and 28,675 edges, with zero post-build dangling endpoints. The broad original query
 was repeated against this refreshed graph and found 451 connected nodes; its CLI
 output was budget-truncated. Narrow source queries, rather than absence from the
 truncated output, determined the actual edit scope.
@@ -60,6 +60,15 @@ The Mac handoff also repeated `iOS baseline bootstrap Fennec Swift Keychain`
 before and after the browser/component/workspace refresh. Its source-verified
 change scope is limited to the browser's own scripts and documentation; no
 server contract or imported upstream source was changed for this handoff.
+
+Android implementation also queried `NavigationThrottle PhiShark ApiKeyVault
+browser preflight native` before editing and after the browser/component/workspace
+refresh. The refreshed query found 196 connected nodes, including the native
+overlay and JNI/vault relationship; output was truncated at 1,000 tokens.
+The browser component drops 111 unresolved external/library AST endpoints.
+The external Chromium checkout is outside the graph; its overlay was applied
+after the local x64 baseline launch passed. Current source/headers and separate native
+compile checks, rather than graph absence, determine these integration points.
 
 This impact check remains **incomplete for document semantics and unaffected
 branch snapshots**. Code-only updates do not refresh semantic document extraction;
