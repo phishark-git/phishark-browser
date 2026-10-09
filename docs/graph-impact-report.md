@@ -15,11 +15,11 @@ validation, Mac handoff. Deployment order: reviewed orchestrator workflow after
 explicit approval, then accepted clients. PR #25 CI passed; deployment remains
 pending and production configuration/provider retention remains unknown.
 
-Both changed repository code graphs were updated. Browser: 671 nodes / 1,388 raw
-edges, component 1,196 edges after 180 unresolved external endpoints were dropped.
+Both changed repository code graphs were updated. Browser: 672 nodes / 1,390 raw
+edges, component 1,198 edges after 180 unresolved external endpoints were dropped.
 Orchestrator: 1,721 nodes / 4,622 raw edges, component 3,753 edges after 860
 unresolved external endpoints were dropped. Final workspace refresh rebuilt to
-13,939 nodes / 30,043 edges, zero aggregate dangling endpoints. The same impact query returned
+13,940 nodes / 30,045 edges, zero aggregate dangling endpoints. The same impact query returned
 122 connected nodes (30 displayed at 1,400 tokens), including ScreenshotCapture,
 TabProtection, executor builders and selectWebEvidenceResponse.
 
