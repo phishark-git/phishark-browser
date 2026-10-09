@@ -214,3 +214,13 @@ göndermemeli. 401 yenileme ve tek kapasite-429 tekrarını ölçümde ayrıca b
 Yerel `/pages/duplicate-history` fixture'ı HTML'i değiştirerek beş replaceState
 olayı üretir; `/stats` senaryo başına istek sayar. Android testini iOS doğrulaması
 olarak kullanmayın. [Ayrıntılı kapsam](../docs/android-request-deduplication.md).
+
+### Aktif analiz göstergesi — güncel tercih
+
+Kullanıcı yalnız analiz sürerken küçük ve rahatsız etmeyen bir gösterge istedi.
+“PhiShark kontrol ediyor · Bekleyin” metnini aktif sekmede gösterin; hızlı/cache
+yanıtlarında titreşimi önlemek için kısa gecikme kullanın. İş bittiğinde veya
+hata/iptalde gizleyin; düşük risk/kısmi kontrol rozeti göstermeyin. Yüzde veya
+güvenli sonucu uydurmayın. Gösterge yeni istek başlatmamalı; sekme/gezinme kimliği
+ile stale olayları reddetmeli. Bu bir bilgi göstergesidir, yeni etkileşim engeli
+değildir. Mevcut risk uyarısı ve kesin engel ekranları korunur.

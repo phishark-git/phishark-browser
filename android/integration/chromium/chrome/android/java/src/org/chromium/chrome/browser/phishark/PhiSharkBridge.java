@@ -5,11 +5,14 @@ import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
 import android.text.InputType;
 import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.ImageView;
@@ -39,6 +42,10 @@ public final class PhiSharkBridge {
     private final WeakReference<Activity> activity;
     private final ActivityTabProvider tabs;
     private final View uiHost;
+    private final TextView scanIndicator;
+    private final Runnable showScanIndicator = this::showScanningIndicator;
+    private WebContents indicatorContents;
+    private long indicatorGeneration = -1;
     private ActivityTabProvider.ActivityTabTabObserver tabObserver;
     private AlertDialog verdictDialog;
     private WebContents dialogContents;
@@ -67,6 +74,25 @@ public final class PhiSharkBridge {
     private PhiSharkBridge(Activity owner, ActivityTabProvider provider) {
         activity = new WeakReference<>(owner); tabs = provider;
         uiHost = owner.findViewById(android.R.id.content);
+        scanIndicator = new TextView(owner);
+        scanIndicator.setText("PhiShark kontrol ediyor · Bekleyin");
+        scanIndicator.setTextSize(12);
+        scanIndicator.setTextColor(0xFFE1F3F5);
+        scanIndicator.setPadding(dp(12), dp(7), dp(12), dp(7));
+        scanIndicator.setGravity(Gravity.CENTER);
+        scanIndicator.setAccessibilityLiveRegion(View.ACCESSIBILITY_LIVE_REGION_POLITE);
+        GradientDrawable background = new GradientDrawable();
+        background.setColor(0xF0092330);
+        background.setCornerRadius(dp(16));
+        background.setStroke(dp(1), 0xFF237789);
+        scanIndicator.setBackground(background);
+        scanIndicator.setVisibility(View.GONE);
+        FrameLayout.LayoutParams layout = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
+        layout.bottomMargin = dp(32);
+        layout.leftMargin = layout.rightMargin = dp(16);
+        ((FrameLayout) uiHost).addView(scanIndicator, layout);
         // The activity owns the observer and destroys it with its tab provider.
         tabObserver = new ActivityTabProvider.ActivityTabTabObserver(tabs) {
             @Override protected void onObservingDifferentTab(Tab tab) { refresh(); }
@@ -87,6 +113,10 @@ public final class PhiSharkBridge {
         PhiSharkBridge bridge = WINDOWS.remove(owner);
         if (bridge == null) return;
         bridge.tabObserver.destroy();
+        bridge.uiHost.removeCallbacks(bridge.showScanIndicator);
+        if (bridge.scanIndicator.getParent() instanceof ViewGroup) {
+            ((ViewGroup) bridge.scanIndicator.getParent()).removeView(bridge.scanIndicator);
+        }
         if (bridge.verdictDialog != null) bridge.verdictDialog.dismiss();
         if (bridge.accountDialog != null) bridge.accountDialog.dismiss();
         bridge.dialogContents = null;
@@ -140,13 +170,43 @@ public final class PhiSharkBridge {
 
     private void refresh() {
         WebContents contents = current(); State state = STATES.get(contents);
-        // Quiet by default; diagnostics remain available from the app menu.
+        refreshScanningIndicator(contents, state);
+        // Completed results stay quiet; diagnostics remain in the app menu.
         if (verdictDialog != null && (contents != dialogContents || state == null
                 || state.generation != dialogGeneration)) {
             verdictDialog.dismiss(); verdictDialog = null;
         }
         if (state != null && (state.verdict == 3
                 || state.verdict == 2 && state.deep && !state.warningAccepted)) showVerdict(contents, state);
+    }
+
+    private static boolean isScanning(State state) {
+        return state != null && state.verdict != 3 && state.verdict != 5
+                && (state.verdict == 0 || state.deepPending);
+    }
+
+    private void refreshScanningIndicator(WebContents contents, State state) {
+        boolean changed = contents != indicatorContents
+                || state == null || state.generation != indicatorGeneration;
+        if (changed || !isScanning(state)) {
+            uiHost.removeCallbacks(showScanIndicator);
+            scanIndicator.setVisibility(View.GONE);
+        }
+        indicatorContents = contents;
+        indicatorGeneration = state == null ? -1 : state.generation;
+        if (isScanning(state) && scanIndicator.getVisibility() != View.VISIBLE) {
+            uiHost.removeCallbacks(showScanIndicator);
+            uiHost.postDelayed(showScanIndicator, 350);
+        }
+    }
+
+    private void showScanningIndicator() {
+        State state = STATES.get(current());
+        Activity owner = activity.get();
+        if (owner != null && !owner.isFinishing() && current() == indicatorContents
+                && state != null && state.generation == indicatorGeneration && isScanning(state)) {
+            scanIndicator.setVisibility(View.VISIBLE);
+        }
     }
 
     private int dp(int value) {
