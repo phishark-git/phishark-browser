@@ -112,7 +112,7 @@ def main():
         body = replace_once(body, '  defines = [ "ZLIB_CONST" ]',
             '  defines = [ "ZLIB_CONST" ]\n'
             '  if (is_android) {\n'
-            '    sources += [ "phishark/navigation_throttle.cc", "phishark/navigation_throttle.h", "phishark/verdict.h" ]\n'
+            '    sources += [ "phishark/navigation_throttle.cc", "phishark/navigation_throttle.h", "phishark/verdict.cc", "phishark/verdict.h" ]\n'
             '  }', 'core defines')
         return replace_once(body, '  deps = [\n',
             '  deps = [\n    ":phishark_buildflags",\n    "//crypto",\n', 'core dependencies')
@@ -168,6 +168,7 @@ def main():
     shared_sources = {
         'chrome/android/' + vault: 'android/security/java/io/phishark/browser/security/ApiKeyVault.java',
         'chrome/browser/phishark/verdict.h': 'android/security/verdict.h',
+        'chrome/browser/phishark/verdict.cc': 'android/security/verdict.cc',
     }
     for relative, repo_relative in shared_sources.items():
         target = source / relative

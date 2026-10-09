@@ -65,7 +65,7 @@ directory before reusing the output directory for PhiShark:
 - x64 AAB SHA-256: `6956baee9dd67979befa0f1d33a4b783e9bd941f001e5a669236c4f756c0545d`.
 
 The observed first-run and local HTTP page render establish baseline launch only.
-The 17-file PhiShark overlay was subsequently applied to a `codex/` branch in the
+The PhiShark overlay was subsequently applied to a `codex/` branch in the
 external checkout; GN generation passed for `io.phishark.browser`, with the
 synthetic fixture mode enabled. The integrated APK/device acceptance is pending.
 
@@ -76,8 +76,17 @@ command, JNI generator and Android headers, with upstream warning/plugin checks.
 The Java bridge and vault compiled against the actual Chromium classpath and SDK.
 These compiler checks do not run a navigation or prove screenshot privacy.
 The overlay was applied after the local x64 baseline launch.
-`apply-integration.py --dry-run` validates all 17
+`apply-integration.py --dry-run` validates all 18
 copy/edit targets without mutating Chromium.
+
+The first in-tree integration build caught two source-path-sensitive checks that
+the external compatibility compile did not enforce: fixture-key pointer
+arithmetic and an inline complex constructor. The fixture now uses bounded
+iterators; `NavigationSession` has an out-of-line constructor compiled into both
+Chromium and the independent policy test. Actual in-tree compilation of the
+navigation throttle and verdict source then passed with upstream checks enabled.
+The 42 native vectors/invariants and eight JS tests passed again. The compatibility
+helper must not be treated as an equivalent replacement for the in-tree build.
 
 The actual `ApiKeyVault` source also passed a separate Android instrumentation
 test on this emulator: 16 assertions across two different processes, including

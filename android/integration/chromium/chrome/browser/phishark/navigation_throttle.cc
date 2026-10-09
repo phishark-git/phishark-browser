@@ -270,8 +270,8 @@ class TabProtection final : public content::WebContentsObserver,
     }
     if (UseLocalFixtures()) {
       std::fill(key.begin(), key.end(), 0);
-      constexpr char kFixtureKey[] = "fixture-only";
-      key.assign(kFixtureKey, kFixtureKey + sizeof(kFixtureKey) - 1);
+      const std::string fixture_key = "fixture-only";
+      key.assign(fixture_key.begin(), fixture_key.end());
     }
     const bool key_valid = !key.empty() && key.size() <= 4096
         && std::all_of(key.begin(), key.end(), [](uint8_t c) { return c >= 33 && c <= 126; });

@@ -40,7 +40,7 @@ Native conformance check (Linux/WSL):
 
 ```sh
 node scripts/native-vectors.mjs
-g++ -std=c++17 -Wall -Wextra -Werror -I.build/native android/security/verdict_test.cc -o .build/native/verdict-test
+g++ -std=c++17 -Wall -Wextra -Werror -I.build/native android/security/verdict_test.cc android/security/verdict.cc -o .build/native/verdict-test
 .build/native/verdict-test
 ```
 

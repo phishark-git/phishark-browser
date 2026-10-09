@@ -50,8 +50,8 @@ The grouped analyzers component was rebuilt from its 21 module snapshots after
 refreshing the six changed analyzer modules. The aggregate workspace graph was
 then rebuilt and the original query rerun.
 
-The subsequent Android overlay/source/fixture rebuild produced a workspace graph of 12,988
-nodes and 28,675 edges, with zero post-build dangling endpoints. The broad original query
+The subsequent Android overlay/source/fixture rebuild produced a workspace graph of 12,989
+nodes and 28,676 edges, with zero post-build dangling endpoints. The broad original query
 was repeated against this refreshed graph and found 451 connected nodes; its CLI
 output was budget-truncated. Narrow source queries, rather than absence from the
 truncated output, determined the actual edit scope.
@@ -63,7 +63,7 @@ server contract or imported upstream source was changed for this handoff.
 
 Android implementation also queried `NavigationThrottle PhiShark ApiKeyVault
 browser preflight native` before editing and after the browser/component/workspace
-refresh. The refreshed query found 196 connected nodes, including the native
+refresh. The refreshed query found 195 connected nodes, including the native
 overlay and JNI/vault relationship; output was truncated at 1,000 tokens.
 The browser component drops 111 unresolved external/library AST endpoints.
 The external Chromium checkout is outside the graph; its overlay was applied

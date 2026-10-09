@@ -48,7 +48,7 @@ inline Verdict Decide(Profile profile, const Result& result) {
 // never holds the API key or decides whether a blocked navigation resumes.
 class NavigationSession {
  public:
-  explicit NavigationSession(bool private_mode) : private_mode_(private_mode) {}
+  explicit NavigationSession(bool private_mode);
   uint64_t Begin(std::string canonical_url) {
     ++generation_; url_ = std::move(canonical_url); verdict_ = Verdict::kChecking;
     warning_accepted_ = false; return generation_;
