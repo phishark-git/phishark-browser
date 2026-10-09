@@ -30,7 +30,10 @@ the actual x64 APK passed basic preflight/deep block, return-to-safety and priva
 URL-only emulator checks. C++ policy is tested
 independently. The unmodified ARM64 APK/AAB built but failed emulator launch;
 the local native x64 baseline built and loaded the fixture page. The integrated
-ARM64 PhiShark APK/AAB built with the pre-account overlay; physical launch remains unverified. Swift awaits Mac compilation. DNS enforcement,
+ARM64 PhiShark APK/AAB built with the pre-account overlay; physical launch remains unverified.
+The separate Mac branch `9064f050` reports baseline/integrated simulator builds
+and 9 Swift tests passed using Xcode 26.6 experiment mode; native account login,
+pinned Xcode 26.5 and physical iPhone acceptance remain unverified. DNS enforcement,
 cross-tab request coalescing, complete address-bar UI and capture pixel masking
 remain incomplete. Partial HTML deep results cannot label a page safe; screenshots
 are omitted. The x64 fixture APK is a runnable prototype; full acceptance is pending.

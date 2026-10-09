@@ -5,6 +5,11 @@ present PhiShark branding from the first launch. This supersedes manual API-key
 entry as the primary onboarding flow; developer API-key configuration remains
 compatible. Deployment and platform acceptance are separate gates.
 
+The dated implementation and diagnostic notes below describe the pre-rollout
+state. Current production workflow results and public route checks are recorded
+in the [9 October production rollout report](production-rollout-20261009.md).
+Mac onboarding continues with [MAC_ACCOUNT_ONBOARDING.md](../ios/MAC_ACCOUNT_ONBOARDING.md).
+
 ## Contract and implementation order
 
 1. Backend provider: dedicated `browser` client, exact
@@ -74,7 +79,8 @@ About → developer settings.
 Pushed implementation: backend `725fe1b` ([PR 21](https://github.com/phishark-git/b-backend-service/pull/21)),
 dashboard `fb05b89` ([PR 29](https://github.com/phishark-git/w-phishark-dashboard-website/pull/29)),
 browser native account/branding `ad710424`, factory new-tab suggestions `8308008b`.
-No production workflow was triggered. Graph code/components/workspace were
+At that implementation checkpoint no production workflow had been triggered.
+Graph code/components/workspace were
 refreshed and both original impact queries repeated; semantic docs and other
 branch snapshots remain incomplete, as described in the graph impact report.
 
@@ -99,7 +105,7 @@ run `36936617829` used `9d6cc566`, whose source has no `/browser/auth` routes;
 dashboard run `36941978828` used `2d46213d`, whose source has no
 `/browser/connect` route. This proves the new routes are absent from those
 workflow revisions, not the exact live HTTP response or unobserved runtime
-changes. No production request or VDS inspection was performed. Dashboard
+changes. No production request or VDS inspection had been performed at that checkpoint. Dashboard
 reconciliation `f0b17e6` passed 86 tests, serve-config validation and build;
 PR 29 is mergeable. Backend PRs 20/21 remain open with successful CI.
 

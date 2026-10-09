@@ -129,3 +129,23 @@ consumers, unknown runtime/proxy/retention settings and external-provider terms.
 Native navigation consumers and platform callback behavior remain unverified
 until real platform/device tests. Do not declare MVP acceptance or full graph
 coverage from this refresh.
+
+## Production rollout follow-up — 2026-10-09
+
+All seven provider deployments, orchestrator, both backend prerequisite/browser
+deployments and dashboard deployment completed successfully through their official
+workflows. The [production report](production-rollout-20261009.md) records exact
+merge SHAs/run links and 5/5 public smoke checks. The usage rollout prerequisite
+is now deployed; authenticated scan/retention and human login acceptance remain
+unverified. Public auth start success does not prove enabled deep/prompt runtime
+flags or persistence behavior.
+
+After the documentation update, the browser code graph was refreshed (509 nodes,
+1,046 raw edges), its component rebuilt (891 edges), and the workspace rebuilt
+(13,063 nodes / 28,748 edges, zero aggregate dangling endpoints). The original
+`browser account deployment BROWSER_SCAN_INTERNAL_TOKEN deploy-self-hosted`
+query was repeated and found 734 connected nodes; displayed output was truncated
+at 600 tokens. The browser component drops 146 unresolved external AST endpoints.
+Code coverage, stale semantic documents, older node IDs, four external concept
+nodes without source_file, mixed branch snapshots and live-runtime limits above
+still apply. No full semantic rebuild or runtime coverage is claimed.

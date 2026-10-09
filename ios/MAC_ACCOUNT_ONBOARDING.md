@@ -4,6 +4,12 @@
 tarayıcı veya yeni hesap sistemi kurmayın; mevcut PhiShark hesabını eklentideki
 eşleştirme mantığıyla bağlayın. Manuel API anahtarı ilk kurulum ekranı değildir.
 
+**Sunucu hazırlığı:** 9 Ekim 2026 20:19 Türkiye saati itibarıyla gerekli resmi
+üretim yayınları başarılı. Sentetik S256 PKCE başlangıcı 200, giriş sayfası HTML
+200, kimliksiz preflight/deep 401 döndü. Akış/URL/state sözleşmesi doğrulandı;
+gerçek hesap girişi, callback, yenileme ve çıkış henüz cihaz kabulü bekliyor.
+Commit/run kanıtı: [yayın raporu](../docs/production-rollout-20261009.md).
+
 ## Başlangıç durumu ve dal
 
 Mac dalındaki `9064f050` raporu okundu: değiştirilmemiş Fennec ve native güvenlik
@@ -58,7 +64,8 @@ Reduce Motion'a uyumlu olsun. VoiceOver ve büyük yazı ile taşmayı kontrol e
 ## Giriş sözleşmesi
 
 API tabanı: `https://api.phishark.io`; dashboard: `https://app.phishark.io`.
-Yeni yolların gerçekten yayımlandığına dair Windows yayın raporunu kontrol edin.
+Yeni yolların gerçekten yayımlandığına dair
+[Windows yayın raporunu](../docs/production-rollout-20261009.md) kontrol edin.
 Bu dokümanın veya PR'ın varlığı üretim yayını kanıtı değildir.
 
 | İşlem | Yol | Gövde / davranış |
@@ -167,8 +174,8 @@ Xcode 26.5 kuruluysa deney değişkenini vermeyin. Uygun simulator/device
 destination'ını mevcut script desteğiyle seçin. Başarılı compile, uygulamanın
 açılması ve kullanıcı girişinin tamamlanması ayrı sonuçlardır.
 
-Canlı test ancak Windows yayın raporu gerekli yolların hazır olduğunu
-doğruladığında kullanıcı tarafından kendi hesabıyla yapılmalı: ilk giriş,
+Yukarıdaki yayın raporu giriş yollarının hazır olduğunu doğruluyor. Native
+entegrasyon ve yerel testler tamamlanınca kullanıcı kendi hesabıyla denemeli: ilk giriş,
 uygulamayı yeniden açma, access expiry/refresh, offline/online, çıkış, tekrar
 giriş, normal/gizli sekme ve hesap değişimi. İnsan parolası/OTP'sini otomatik
 girmeyin veya loglamayın. Sunucu/veritabanı ayarlarını Mac'ten değiştirmeyin.
