@@ -58,8 +58,11 @@ Browser OAuth assertions: 19 passed. Branding text tests: 5 passed. Shared contr
 8 passed. Vault instrumentation: 23 assertions passed in two emulator processes
 (prepare PID 2877, verify PID 2908), including encrypted persistence, key-purpose
 isolation, tamper rejection and independent deletion. Native source C++/Java API
-compilation passed; the new account/branding APK build and visual acceptance are
-separate from these checks.
+compilation passed. Account/branding x64 APK and AAB built successfully, including
+bundle manifest/dex sanity checks after placing the callback in the chrome split.
+The APK installed and launched on API 35 x86_64; launcher, welcome and native
+account onboarding were visually checked. Live account login, refresh/revocation
+and all UI surfaces still require acceptance with compatible deployed services.
 
 Android pairing uses an external installed browser and excludes PhiShark itself,
 including when PhiShark is the default browser. With no external browser it shows
@@ -67,6 +70,13 @@ a setup error. Network/refresh response loss may require a fresh login; a perman
 session is not promised. No real account token or production endpoint was used in
 these tests. Login/content consent are separate, and the API-key fallback is under
 About → developer settings.
+
+Pushed implementation: backend `725fe1b` ([PR 21](https://github.com/phishark-git/b-backend-service/pull/21)),
+dashboard `fb05b89` ([PR 29](https://github.com/phishark-git/w-phishark-dashboard-website/pull/29)),
+browser native account/branding `ad710424`, factory new-tab suggestions `8308008b`.
+No production workflow was triggered. Graph code/components/workspace were
+refreshed and both original impact queries repeated; semantic docs and other
+branch snapshots remain incomplete, as described in the graph impact report.
 
 iOS: `BrowserAccountFlow` and purpose-specific Keychain storage were added to the
 standalone Swift package. They are uncompiled on Windows. The Mac handoff describes

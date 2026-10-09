@@ -166,3 +166,34 @@ operation, capture sanitization, error classification and stale-result rejection
 Fixture `/stats` counts only known synthetic scenario names and numeric events
 in memory. It stores no URL or page evidence. An unchanged `preflight-block`
 page GET count is the concrete test for preventing that document request.
+
+## Account and PhiShark branding build
+
+The final x64 fixture APK/AAB at browser source `8308008b` built successfully.
+APK SHA-256: `78809f489e3441877ee8aba2a033f3caa81d78b3a0313a75cb93fcf92ad38e41`.
+AAB SHA-256: `402768d244b67c2658fcef3fe05434a2373edb241013259e907a5e4af4e4a41c`.
+Both are development-signed and include the opt-in local fixture capability.
+
+On the same API 35 x86_64 emulator the final APK installed, launched and completed
+the welcome/search-provider steps. The official PhiShark launcher mark, welcome
+copy/legal links, native account pairing dialog and two PhiShark factory new-tab
+suggestions were visually verified. These screenshots use an empty test profile.
+The former Chromium sample tiles and updater checkbox are absent. Search engine
+brands and upstream legal credits remain intentional. The native security badge
+uses PhiShark colors and a short state-transition fade; ordinary browser
+animations remain upstream.
+
+The initial AAB attempt caught the callback activity declared outside the chrome
+split; placing it inside upstream's application-definitions macro fixed bundle
+manifest/dex sanity checks. The final APK and AAB both passed packaging.
+
+No live account was connected. Backend/dashboard account routes are pushed in
+review branches but not deployed. Real PKCE callback, expired-token refresh,
+server revocation, offline recovery, large-text/dark-mode UI and physical ARM64
+acceptance remain required. The earlier security fixture observations above were
+made on the prior APK and must not be treated as end-to-end account validation.
+The ARM64 artifact above predates account/branding changes.
+
+![PhiShark first launch](images/android-account-first-run.png)
+
+![PhiShark native account onboarding](images/android-account-onboarding.png)
