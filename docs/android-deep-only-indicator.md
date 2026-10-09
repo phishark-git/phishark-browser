@@ -42,7 +42,47 @@ provider/retention verification or proof of screenshot masking.
 
 ## Validation
 
-Tests, final APK/AAB build and targeted emulator evidence are appended after
-execution. Full screenshot/complete-evidence acceptance remains pending, and this
-UI change does not imply that acceptance. Existing Graphify mixed branch, old-ID
-and incomplete semantic coverage limitations remain.
+Source `12ffd871`: 11 JS tests, 58 C++ vectors/navigation invariants, 19 OAuth
+assertions and 5 branding tests passed. Actual Chromium C++/Java/JNI/resources
+and x64 APK/AAB packaging passed in 4m08.90s. The existing upstream XR
+`UsedByNative` warning was nonfatal. In-place APK installation preserved app data.
+
+The synthetic handoff fixture delays preflight 1 second, document response 1.5
+seconds and deep response 3 seconds. Sampled screenshots after Enter:
+
+| Sample | Indicator |
+| --- | --- |
+| 650 ms, preflight | Hidden |
+| 1,714 ms, document waiting | Hidden |
+| 3,305 ms, deep | Visible, static English label |
+| 4,302 ms, deep | Same visible static label |
+| 6,515 ms, completed | Hidden |
+
+This is sampled UI evidence, not a frame-by-frame recording. Receiver counters
+were exactly 1 preflight / 1 deep. Native evidence contained 2,069 HTML bytes;
+the expected fixture title and full response URL matched. Script/frame markup
+was absent, sensitive fixture markers caused zero privacy rejections, and there
+were 0 screenshot bytes (`hasScreenshot: false`). Coverage explicitly remained
+`partial_html_no_screenshot`. No actual HTML, target URL or credentials were
+retained in the audit metadata. This verifies genuine loaded-page HTML dispatch
+while proving screenshot capture is still missing.
+
+Returned to new tab, restored original command line and verified fixture mode
+off; local server stopped. Normal launch was repeated. APK SHA-256:
+`c8349f0777b82aba715237dd07cd4a85115aa200e81a15189175c10dfd6f881d`.
+AAB SHA-256:
+`aa3bef1a6cc5c3e51a3b5711ae8c1a2cf729fc4fcde6f9291cc97beb62a93112`.
+
+This run did not add native device checks for every retry, deadline, background
+tab, private session, SPA/restore path or live provider request. Full screenshot,
+complete-evidence acceptance and Mac adapter checks remain pending; this UI
+change does not imply that acceptance. Server repositories were inspected but
+unchanged and not retested as evidence for mobile behavior.
+
+Browser code graph updated: 586 nodes / 1,203 raw edges; browser component 1,044
+edges. Workspace rebuilt: 14,144 nodes / 30,138 edges, zero dangling aggregate
+endpoints. Original impact query repeated (233 nodes, budget truncated). Mixed
+branches, older IDs, four conceptual nodes missing source paths and incomplete
+Markdown/XML semantic coverage still limit graph completeness. No server rollout
+or compatibility migration is required. Mac UI/evidence acceptance remains the
+explicit unresolved platform consumer.
