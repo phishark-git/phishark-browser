@@ -23,3 +23,8 @@ Caches are memory-only, per normal/private session: preflight 600 seconds and de
 ## Current acceptance boundary
 
 The JS code is an executable reference, not the app's transport. C++ policy is compiled and tested independently. Keystore compiled against the Chromium SDK but awaits device verification; the Swift package awaits Mac compilation. Throttle/delegate wiring, DNS enforcement, native evidence capture, actual UI, in-memory native caches and secure native networking remain gated on successful upstream builds. No APK/AAB/IPA is claimed yet.
+
+[Pinned integration points](native-integration-points.md) record the actual
+Chromium registry/no-URL-loader interfaces and Firefox action/async-response
+callbacks. [Local fixtures](local-device-fixtures.md) provide concrete device
+inputs; neither document substitutes for native execution evidence.

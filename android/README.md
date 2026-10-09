@@ -12,6 +12,25 @@ bash android/scripts/baseline.sh "$HOME/phishark-browser-build"
 
 The script uses Chromium 153.0.8010.37 and Cromite's ordered patches and GN arguments. ARM64 targets are `chrome_public_apk` and `chrome_public_bundle`. Downloads, system build dependencies and the build can take substantial time. The documented release-specific Docker image returned a missing manifest during the initial check; using an older image would change the baseline and is not approved.
 
+The local baseline needed bootstrap initialization for both root and nested
+depot_tools. Chromium hooks now download PGO profiles; Cromite's pre-start profile
+list also supplies Android ARM32 and desktop ARM64/x64 profiles selected by its
+patches. The helper keeps the pinned official PGO configuration. Source sync,
+patching and build-dependency markers are resumable only in the same build root
+and version. Nested Git metadata is preserved by prepare-dependencies.sh before
+applying Cromite's dependency patches; it is restored for hooks and hidden again
+afterwards. Do not reuse these markers with another release.
+
+To retain diagnostics and the exit status:
+
+```sh
+bash android/scripts/run-baseline.sh "$HOME/phishark-browser-build"
+```
+
+Its log is `$HOME/phishark-browser-build/baseline.log`. Run one build at a time;
+monitor actual Windows host free space throughout. This script produces upstream
+baseline targets, not a signed/fully integrated PhiShark release.
+
 Native conformance check (Linux/WSL):
 
 ```sh

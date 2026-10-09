@@ -10,6 +10,12 @@ Backend persists numeric usage counters and existing API-key/account metadata. I
 
 Deep analysis can call phishing modules and prompt analysis, with Google Gemini or other configured providers. Gemini Developer API and Vertex AI Gemini API/express are distinct surfaces; the workspace inventory is the source for each module. Provider retention, regional processing, abuse monitoring and contractual settings are outside the browser's own storage controls. Record actual provider/API/model/configuration and the applicable terms before claiming non-retention. No new LLM provider, model or shared model key is introduced by this change.
 
+The [external-provider terms review](external-provider-terms.md) records the
+currently published terms separately from unverified runtime/account settings.
+PhiShark's no-history behavior does not imply that every external provider has
+zero retention. Seven provider logging patches are mandatory rollout
+prerequisites; proxy/APM settings and external terms remain independent gates.
+
 Private mode still transmits the full URL (query can contain personal data). It does not mean anonymous network access or invisibility to the visited site/API provider. Local private-session history, evidence and verdict caches must disappear on closure. API key remains in secure device storage until the user removes it. Android storage is in AndroidKeyStore with ciphertext in the no-backup directory; iOS uses non-synchronizing WhenUnlockedThisDeviceOnly Keychain items.
 
 Before release, capture fixtures containing email/password/textarea/select/editable values, authorization/cookie values, sensitive URL queries, cross-origin frames and shadow inputs. Inspect captured payloads and screenshots locally without logging their contents. Verify no records/artifacts/callbacks and no URL logs across application, proxy and every participating module. External-provider terms remain separately disclosed even if PhiShark persistence is disabled.
