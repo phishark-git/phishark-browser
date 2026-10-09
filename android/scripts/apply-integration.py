@@ -148,6 +148,43 @@ def main():
             f'    protected void onDestroyInternal() {{\n        {bridge}.uninstall(this);', 'activity teardown'))
     edit('chrome/android/java/AndroidManifest.xml', lambda text:
         replace_once(text, 'android:label="Cromite"', 'android:label="PhiShark Browser"', 'application label'))
+    # Cromite denies browser-process traffic unless its exact annotation has an
+    # entry and an allow rule. Keep default-deny and all other rules unchanged.
+    annotation = 'phishark_ephemeral_browser_analysis'
+    annotation_hash = 0
+    for char in annotation:
+        annotation_hash = (annotation_hash * 31 + ord(char)) % 138003713
+    def firewall_annotations(text):
+        if re.search(rf'hash_code="{annotation_hash}"', text):
+            raise SystemExit('PhiShark traffic annotation hash collides with an upstream entry')
+        return replace_once(text, '</annotations>',
+            f' <item id="{annotation}" hash_code="{annotation_hash}" '
+            'file_path="chrome/browser/phishark/navigation_throttle.cc" />\n</annotations>', 'firewall annotation')
+    edit('services/firewall/tools/annotations.xml', firewall_annotations)
+    edit('services/firewall/tools/rules.xml', lambda text:
+        replace_once(text, '</rules>',
+            f' <!-- User-configured ephemeral PhiShark URL/content analysis only. -->\n'
+            f' <item id="{annotation}" allowed="1"/>\n</rules>', 'firewall rule'))
+
+    def first_run(text):
+        text = replace_once(text, '        mTitle = view.findViewById(R.id.title);',
+            '        mTitle = view.findViewById(R.id.title);\n'
+            '        ((TextView) mTitle).setText("PhiShark Browser");\n'
+            '        ((android.widget.ImageView) view.findViewById(R.id.image))\n'
+            '                .setImageResource(R.drawable.phishark_icon);', 'welcome branding')
+        text = replace_once(text, '        mAutoUpdaterCheckBox.setVisibility(visibility);',
+            '        mAutoUpdaterCheckBox.setVisibility(View.GONE);', 'disabled upstream updater control')
+        for number in (3, 4):
+            text = replace_once(text, f'        spans.add(buildPrivacyPolicyLink("{number}", R.string.privacy_link{number}));',
+                '', 'unused updater privacy link')
+        return replace_once(text, '        String tosString = getString(R.string.bromite_fre_footer_privacy_policy);',
+            '        String tosString = "PhiShark Browser, Chromium ve Cromite üzerine kuruludur. "\n'
+            '                + "Koruma için kişisel API anahtarınızı güvenlik panelinden ekleyin. "\n'
+            '                + "Normal modda içerik analizi ayrıca onay ister; gizli mod yalnız URL kontrolü yapar.\\n\\n"\n'
+            '                + "<PRIVACY_LINK1>Otomatik reklam filtresi güncellemeleri</PRIVACY_LINK1>, "\n'
+            '                + "<PRIVACY_LINK2>Cromite gizlilik açıklamasına</PRIVACY_LINK2> tabidir.";',
+            'welcome privacy text')
+    edit('chrome/android/java/src/org/chromium/chrome/browser/firstrun/ToSAndUMAFirstRunFragment.java', first_run)
     edit('chrome/android/java/src/org/chromium/chrome/browser/omaha/CromiteUpdateStatusProvider.java',
         lambda text: replace_once(text, 'super(new BromiteInlineUpdateController());',
             'super(new org.chromium.chrome.browser.phishark.PhiSharkUpdateController());', 'upstream APK updater'))

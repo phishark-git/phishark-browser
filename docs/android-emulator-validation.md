@@ -34,7 +34,8 @@ Only synthetic fixture data is used; the production PhiShark API is not called.
 | Locally generated ARM64 universal APK | Passed | Failed: immediate SIGSEGV |
 | Official pinned Cromite ARM64 APK | Passed | Failed: same JNI exception path |
 | Locally compiled unmodified x64 APK | Passed | Passed; first-run completed and local fixture page rendered |
-| PhiShark integration APK | Build running | Pending |
+| First PhiShark x64 fixture APK | Passed | Launched; initial preflight failed because Cromite's firewall denied its new annotation. Superseded by the corrected artifact below |
+| Corrected PhiShark x64 fixture APK | Passed | Passed; preflight/deep blocking and private URL-only smoke checks passed |
 
 The original ARM64 APK and official ARM64 package both fail when a host JNI
 exception crosses the translated guest's `FindClassHook`. Local symbolization
@@ -67,7 +68,8 @@ directory before reusing the output directory for PhiShark:
 The observed first-run and local HTTP page render establish baseline launch only.
 The PhiShark overlay was subsequently applied to a `codex/` branch in the
 external checkout; GN generation passed for `io.phishark.browser`, with the
-synthetic fixture mode enabled. The integrated APK/device acceptance is pending.
+synthetic fixture mode enabled. The integrated APK subsequently passed the basic
+checks below; full device acceptance remains incomplete.
 
 ## Prepared integration verification
 
@@ -76,7 +78,7 @@ command, JNI generator and Android headers, with upstream warning/plugin checks.
 The Java bridge and vault compiled against the actual Chromium classpath and SDK.
 These compiler checks do not run a navigation or prove screenshot privacy.
 The overlay was applied after the local x64 baseline launch.
-`apply-integration.py --dry-run` validates all 18
+`apply-integration.py --dry-run` validates all 21
 copy/edit targets without mutating Chromium.
 
 The first in-tree integration build caught two source-path-sensitive checks that
@@ -87,6 +89,49 @@ Chromium and the independent policy test. Actual in-tree compilation of the
 navigation throttle and verdict source then passed with upstream checks enabled.
 The 42 native vectors/invariants and eight JS tests passed again. The compatibility
 helper must not be treated as an equivalent replacement for the in-tree build.
+
+The first integrated x64 APK/AAB built successfully and the APK launched as
+`io.phishark.browser`, label `PhiShark Browser`. APK SHA-256:
+`d5769240cdb49e62a660adf8a7dbeb595286d6f01e673711c2f3aa8f6ea019b8`;
+AAB SHA-256: `0191ca83f02290e26f4650cfd1591e3a44f791cfd63c210dc29fe943b0b598a0`.
+These first artifacts are superseded for testing: their preflight-block fixture
+loaded with an unverified badge; counters were zero preflights and one blocked
+scenario page GET. Inspection identified Cromite's default-deny browser-process
+firewall. The applier now registers only the PhiShark annotation and allow rule;
+the generated decoder maps it to `allowed=true`, leaving other rules intact.
+The rebuilt APK passed the repeated on-device checks recorded below.
+The first-run title/icon were corrected; upstream ad-filter privacy links and
+attribution remain visible. The obsolete Cromite APK-update checkbox still appears
+on first run even though the updater controller is disabled; remove it before release.
+
+## Corrected PhiShark device smoke evidence
+
+The corrected x64 fixture APK and AAB built successfully (final incremental build:
+446 actions, 7m06s), and the APK installed/launched on the task-local API 35 emulator.
+
+- APK SHA-256: `5814d36cbc86060b69198697118202f7a611c36e9c75a39eb1adf90524189fb2`.
+- AAB SHA-256: `348736b30ff8761c9e0f9d7a20ca71f7b9466b0d2532f74fca9f51c7ebc35847`.
+- Package `io.phishark.browser`; label `PhiShark Browser`; ABI `x86_64`.
+- Development signing and synthetic loopback-only fixture mode; these are not store artifacts.
+
+| Observed native check | Evidence |
+| --- | --- |
+| Preflight score 86 | Native blocked dialog; one API preflight, zero page GETs for the blocked scenario |
+| Deep score 61 | One page GET followed by one deep request; document replaced by `about:blank`; native blocked dialog without a continue action |
+| Return to safety | Both blocked dialogs returned to the new-tab page |
+| Private URL-only | Opened the same deep-block scenario in a private tab; total preflights rose from 2 to 3 while deep requests stayed at 1; URL-only badge and page remained visible |
+| Synthetic capture privacy | The normal deep request passed the fixture checks for removed form/editable/frame/shadow markers and absent Cookie/Authorization headers; privacy rejection count stayed at zero |
+
+The private-tab check deliberately does not establish a deep verdict. These few
+fixture checks do not certify real-provider detection, consent revocation,
+screenshots, redirect/restore/BFCache coverage, cross-tab coalescing, all error
+paths or everyday browser behavior. ARM64 integration build is running; physical
+Android validation and iOS/Mac validation remain pending. Some upstream brand
+strings and the old first-run update checkbox remain to be cleaned up.
+
+![Native preflight block](images/android-preflight-block.png)
+
+![Native post-load deep block](images/android-deep-block.png)
 
 The actual `ApiKeyVault` source also passed a separate Android instrumentation
 test on this emulator: 16 assertions across two different processes, including

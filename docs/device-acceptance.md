@@ -1,11 +1,15 @@
 # Native/device acceptance record
 
-Every entry below is **pending**. Record platform, upstream/build commit, toolchain,
+Every full acceptance group below remains **incomplete**. A few Android x64
+smoke checks passed; see [actual emulator evidence](android-emulator-validation.md).
+Record platform, upstream/build commit, toolchain,
 device/OS, fixture, expected/observed behavior and a local evidence reference.
 Do not use server/JS tests as proof of native device behavior.
 
 Use the [local fixture harness](local-device-fixtures.md) for deterministic
-navigation/API/privacy inputs. It is ready; native execution against it is pending.
+navigation/API/privacy inputs. Native preflight/deep blocking, return to safety,
+private URL-only behavior and one synthetic capture privacy check have executed;
+these do not complete the broader groups below.
 
 | Acceptance group | Required behavior |
 | --- | --- |

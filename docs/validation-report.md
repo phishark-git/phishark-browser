@@ -96,7 +96,11 @@ C++ and Java sources passed compatibility compilation against pinned Chromium.
 The actual vault source separately passed 16 Android instrumentation assertions
 across two processes, including Keystore persistence and authenticated tamper
 rejection. Neither result validates the integrated browser. GN generation for
-the actual PhiShark package passed; the integrated build and launch remain pending.
+the actual PhiShark package passed; its x64 APK/AAB built, and the APK launched.
+After fixing a missing Cromite firewall rule, device fixtures verified preflight
+blocking before page GET, post-load deep blocking, return to safety and private
+URL-only requests. One normal deep capture passed synthetic sensitive-field/header
+checks. Integrated ARM64 build is running; the broader device suite remains incomplete.
 Screenshot masking, complete capture, cross-tab request coalescing, final
 address-bar integration, Firefox delegate integration, telemetry/account/sync
 audit and actual browser-function acceptance remain incomplete. See

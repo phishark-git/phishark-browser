@@ -26,13 +26,14 @@ The JS code is an executable reference. Android's applied overlay owns native
 throttle/commit observers, bounded HTTPS transport, per-tab memory caches,
 generation cancellation, JNI vault access and a native status/settings/dialog UI.
 Its C++ and Java source compile checks passed against the actual Chromium SDK;
-it has not yet passed APK integration/device tests. C++ policy is tested
+the actual x64 APK passed basic preflight/deep block, return-to-safety and private
+URL-only emulator checks. C++ policy is tested
 independently. The unmodified ARM64 APK/AAB built but failed emulator launch;
 the local native x64 baseline built and loaded the fixture page. The integrated
-PhiShark build is running. Swift awaits Mac compilation. DNS enforcement,
+ARM64 PhiShark build is running. Swift awaits Mac compilation. DNS enforcement,
 cross-tab request coalescing, complete address-bar UI and capture pixel masking
 remain incomplete. Partial HTML deep results cannot label a page safe; screenshots
-are omitted. No runnable PhiShark APK/AAB/IPA is claimed yet.
+are omitted. The x64 fixture APK is a runnable prototype; full acceptance is pending.
 
 [Pinned integration points](native-integration-points.md) record the actual
 Chromium registry/no-URL-loader interfaces and Firefox action/async-response

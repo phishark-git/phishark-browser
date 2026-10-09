@@ -8,7 +8,8 @@ tcp:8765`; a Mac simulator can run the same fixture server locally. Production
 networking must stay HTTPS-only; loopback HTTP is a test exception, not release
 configuration. The task-local Windows emulator has installed baseline comparison
 packages and launched the locally built x64 baseline; actual PhiShark navigation
-tests remain pending the integrated APK build.
+preflight/deep blocking, return-to-safety and private URL-only smoke tests passed
+against the corrected integrated x64 APK. The wider acceptance suite remains pending.
 
 Open `http://127.0.0.1:8765/`. Pages cover score/prompt/degraded/error scenarios,
 two-hop redirects, popup/new tab, same-document history and anchors, downloads,

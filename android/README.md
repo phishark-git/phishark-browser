@@ -1,6 +1,6 @@
 # Android
 
-The Cromite subtree is unmodified. The external Chromium checkout lives on the WSL Linux filesystem, outside this repository. The security directory contains a tested C++ decision/session core and an Android Keystore vault. The `integration/chromium` overlay contains native navigation, networking, consent and UI code; it is **not yet verified in a runnable browser**.
+The Cromite subtree is unmodified. The external Chromium checkout lives on the WSL Linux filesystem, outside this repository. The security directory contains a tested C++ decision/session core and an Android Keystore vault. The `integration/chromium` overlay contains native navigation, networking, consent and UI code. Its x64 fixture APK runs and passed basic native security smoke checks; **full browser acceptance is incomplete**.
 
 ## Baseline
 
@@ -48,8 +48,9 @@ g++ -std=c++17 -Wall -Wextra -Werror -I.build/native android/security/verdict_te
 
 The unmodified ARM64 APK/AAB build passed, but both local and official ARM64 APKs
 crash in this x86_64 emulator's JNI translation path. The local native x64 baseline
-built and launched the fixture page successfully. The overlay is now applied and
-its first integrated build is running. See [observed build/launch evidence](../docs/android-emulator-validation.md).
+built and launched the fixture page successfully. The overlay is applied; the
+integrated x64 build and basic device checks passed, and ARM64 is building.
+See [observed build/launch evidence](../docs/android-emulator-validation.md).
 No official prebuilt package is presented as a PhiShark application.
 
 After a locally compiled baseline launch, apply the reviewable overlay:
@@ -96,4 +97,4 @@ it never overwrites a baseline object. Passing it is not an APK/device test.
 
 After the baseline APK has launched: install a browser-process `NavigationThrottle` for primary-main-frame start and redirects, with cancellation tied to WebContents/navigation generation. Bind the Keystore vault through native JNI only. Add observer checks for same-document, BFCache/history, restore, popup/new tab and external intents. The security interstitial must be native and excluded from scanning; blocked results have no override. A deep warning override applies only to the exact navigation. Preserve ordinary Cromite features.
 
-Build branding and `io.phishark.browser` changes, status and consent UI are applied; integrated APK/device validation remains pending. Keystore code passed a separate 16-assertion emulator instrumentation test against the actual vault source; this does not verify browser integration or physical hardware backing. C++ tests do not verify Chromium navigation hooks.
+Build branding and `io.phishark.browser` changes, status and consent UI are applied; basic x64 device checks passed, while full acceptance remains pending. Keystore code passed a separate 16-assertion emulator instrumentation test against the actual vault source; this does not verify browser integration or physical hardware backing. C++ tests do not verify Chromium navigation hooks.
