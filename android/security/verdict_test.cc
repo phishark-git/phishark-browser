@@ -6,6 +6,14 @@
 
 int main() {
   using namespace phishark;
+  assert(!ReuseNavigationScan(0, 1, "https://a/", 1, "https://a/", false, false));
+  assert(ReuseNavigationScan(1, 1, "https://a/", 1, "https://a/", false, false));
+  for (int i = 2; i <= 6; ++i)
+    assert(ReuseNavigationScan(1, 1, "https://a/", i, "https://a/", true, true));
+  assert(!ReuseNavigationScan(1, 1, "https://a/", 2, "https://a/", true, false));
+  assert(!ReuseNavigationScan(1, 1, "https://a/", 2, "https://a/", false, true));
+  assert(!ReuseNavigationScan(1, 1, "https://a/", 1, "https://a/redirect", false, false));
+  assert(!ReuseNavigationScan(1, 1, "https://a/", 2, "https://a/?q=changed", true, true));
   for (const auto& vector : vectors) assert(Decide(vector.profile, vector.result) == vector.expected);
   NavigationSession normal(false), private_tab(true);
   normal.SetConsent(true); private_tab.SetConsent(true);

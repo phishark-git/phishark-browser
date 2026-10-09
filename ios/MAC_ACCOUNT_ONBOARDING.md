@@ -195,3 +195,22 @@ git push -u origin codex/ios-account-onboarding
 Sonuçta commit/dal adını, rapor yolunu ve kalan işleri Windows tarafına bildirin.
 Mağaza yayını, üretim deployment'ı veya Apple hesabı/sertifika değişimi bu Mac
 görevinin kapsamında değildir.
+
+## Son tercih: sessiz gezinme ve istek tekrarı
+
+Kullanıcı normal sayfada “düşük risk”, “kısmi kontrol” veya yükleniyor rozeti
+istemiyor. Hesap/koruma ayrıntılarını menüye koyun; yalnız risk kararında native
+uyarı/engel açın. Belirsiz/hizmet hatası sonuçlarını güvenli olarak değiştirmeyin.
+Mevcut 31–60 derin uyarı/devam ve >=61 kesin engel politikasını koruyun.
+
+Android'de aynı belge/aynı canonical URL için History API olaylarının yeni nesil
+başlatıp derin analizi tekrarladığı ölçüldü: tek açılışta 1 preflight + 6 deep.
+iOS delegelerinde eşdeğer olayı kontrol edin. Normal akış 1 preflight + 1 deep;
+beş aynı-URL replaceState/hash olayı bu sayıyı artırmamalı. Aktif isteği koruyun,
+preflight bitmeden capture başlatmayın. Değişen path/query, redirect, reload/yeni
+belge ve ayarlar/hesap değişikliği ayrı güvenlik bağlamıdır. Gizli mod deep
+göndermemeli. 401 yenileme ve tek kapasite-429 tekrarını ölçümde ayrıca belirtin.
+
+Yerel `/pages/duplicate-history` fixture'ı HTML'i değiştirerek beş replaceState
+olayı üretir; `/stats` senaryo başına istek sayar. Android testini iOS doğrulaması
+olarak kullanmayın. [Ayrıntılı kapsam](../docs/android-request-deduplication.md).

@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- SPDX-License-Identifier: GPL-3.0-only -->
 <resources>
+    <item type="id" name="phishark_protection_id" />
+    <string name="phishark_protection_menu" translatable="false">PhiShark · Hesap ve koruma</string>
     <string name="phishark_terms_url" translatable="false">https://phishark.io/en/legal/terms</string>
     <string name="phishark_privacy_url" translatable="false">https://phishark.io/en/legal/privacy</string>
 </resources>

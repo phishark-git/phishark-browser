@@ -54,7 +54,7 @@ cihazlar, proxy/cache/redirect ve sunucu saklama kabulü hâlâ ayrı testlerdir
   açılış başarılı. Aynı gerçek sekmede “URL düşük risk · Kısmi kontrol” görüldü.
   Hesap korundu; fixture runtime bayrağının kapalı olduğu tekrar doğrulandı.
 
-Son APK SHA-256: `2586fd668eedbdf69544ea8f7b863ea3ffa7cbee5bfcdd95623878bc04c7b895`.
+`326ae22f` APK SHA-256: `2586fd668eedbdf69544ea8f7b863ea3ffa7cbee5bfcdd95623878bc04c7b895`.
 AAB SHA-256: `e70c1af82f2c89c1e7926bf543f7545cc0351eee0b619fbbbd592842b167a722`.
 Geliştirme imzasıyla x64 emülatör derlemesidir; ARM64 veya mağaza kabulü değildir.
 
@@ -67,3 +67,23 @@ eski node-ID ve farklı dal snapshot sınırları nedeniyle etki analizi tam de�
 
 Üretim sunucusuna SSH veya yeni workflow tetiklemesi yapılmadı. Kullanıcının
 mevcut sayfası uygulama içinden kontrol edildi; hiçbir hesap sırrı çıkarılmadı.
+
+## Belge bağlantı kanıtı düzeltmesi
+
+Önbelleği ayırmak için aynı public sayfa yalnız tanılama query'si ile tekrar
+açıldığında da bağlantı kanıtı eksik kaldı. Kaynak incelemesi, aynı belge içindeki
+History API gezinmesinin `Begin` ile bağlantı neslini sıfırladığını gösterdi.
+Bu yeni bir ağ yanıtı üretmediğinden tekrar socket kanıtı alınamıyordu.
+
+`690de3c1`, yalnız doğrulanmış public socket ile commit edilen belgeye
+Chromium `DocumentUserData` kaydı bağlar. Capture yalnız o belgenin kaydı
+ve canlı ana çerçeve ile çalışır. Pinned Chromium kaynağı bu verinin aynı belge
+gezinmeleri ve BFCache boyunca korunduğunu, farklı belge commit'inde veya
+frame silindiğinde temizlendiğini açıkça belirtir. Domain/URL eşleşmesi veya
+sonradan DNS çözümüyle güven varsayılmaz. Ağ kanıtı hiç alınamayan belgeler
+hâlâ capture dışında kalır; özel modun URL-only ve onay sınırları korunur.
+
+Bu değişiklikten sonra grafik tekrar yenilendi: browser 524 düğüm / 1.072 ham
+kenar, component 915 kenar, workspace 13.078 düğüm / 28.772 kenar. Aynı etki
+sorgusu 110 düğüm döndürdü. Component 147 dış AST referansını dışarıda bırakıyor;
+önceki semantik belge, dal ve canlı runtime kapsam sınırları sürüyor.

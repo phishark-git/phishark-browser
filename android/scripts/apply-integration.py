@@ -156,10 +156,29 @@ def main():
 
     bridge = 'org.chromium.chrome.browser.phishark.PhiSharkBridge'
     edit('chrome/android/java/src/org/chromium/chrome/browser/app/ChromeActivity.java', lambda text:
-        replace_once(replace_once(text, '        super.finishNativeInitialization();',
+        replace_once(replace_once(replace_once(text,
+            '        if (id == R.id.preferences_id) {',
+            f'        if (id == R.id.phishark_protection_id) {{\n            {bridge}.showPanel(this);\n            return true;\n        }}\n\n'
+            '        if (id == R.id.preferences_id) {', 'protection menu action'),
+            '        super.finishNativeInitialization();',
             f'        super.finishNativeInitialization();\n        {bridge}.install(this, getActivityTabProvider());', 'activity install'),
             '    protected void onDestroyInternal() {',
             f'    protected void onDestroyInternal() {{\n        {bridge}.uninstall(this);', 'activity teardown'))
+    def protection_menu(text):
+        anchor = '        modelList.add(buildSettingsItem());'
+        if text.count(anchor) != 4:
+            raise SystemExit('Pinned upstream menu variants changed')
+        text = text.replace(anchor, '        modelList.add(buildPhiSharkItem());\n' + anchor)
+        return replace_once(text, '    private ListItem buildSettingsItem() {',
+            '    private ListItem buildPhiSharkItem() {\n'
+            '        return new ListItem(AppMenuHandler.AppMenuItemType.STANDARD,\n'
+            '                AppMenuItemUtils.buildModelForStandardMenuItem(\n'
+            '                        mContext, getAppMenuItemTheme(), R.id.phishark_protection_id,\n'
+            '                        R.string.phishark_protection_menu,\n'
+            '                        shouldShowIconBeforeItem() ? R.drawable.phishark_icon : Resources.ID_NULL,\n'
+            '                        isMenuIconAtStart()));\n    }\n\n'
+            '    private ListItem buildSettingsItem() {', 'protection menu model')
+    edit('chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java', protection_menu)
     edit('chrome/android/java/AndroidManifest.xml', lambda text:
         replace_once(replace_once(replace_once(text,
             'android:label="Cromite"', 'android:label="PhiShark Browser"', 'application label'),

@@ -46,6 +46,13 @@ malformed JSON or a stalled response body. `/stats` reports numeric counts,
 including page GET counters indexed only by known synthetic scenario names and
 redirect check/request totals. It can demonstrate that a preflight block
 prevented the document GET; no target string is retained.
+`/pages/duplicate-history` changes visible HTML and calls `replaceState` five
+times at 800 ms intervals with fragment-only changes. `requests` in `/stats`
+counts preflight/deep attempts by synthetic scenario. Compare counter snapshots:
+one fresh document should add one of each, including after all five events.
+Changing HTML prevents the deep body-hash cache from concealing a duplicate.
+`duplicate-history-slow` uses the same events and delays the deep response by
+three seconds, exercising preservation of an in-flight request as well.
 There are no request/payload/URL logs or scan records; retry bookkeeping is an
 in-memory digest and disappears when the fixture closes. No real model,
 decision-maker, database, threat feed or production privacy claim is involved.

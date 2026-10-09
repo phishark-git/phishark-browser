@@ -1,18 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-only
 package org.chromium.chrome.browser.phishark;
 
-import android.animation.ValueAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.graphics.Color;
-import android.graphics.drawable.GradientDrawable;
 import android.text.InputType;
 import android.view.Gravity;
-import android.view.ViewGroup;
+import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.ImageView;
@@ -41,12 +38,11 @@ public final class PhiSharkBridge {
     private static final WeakHashMap<Activity, PhiSharkBridge> WINDOWS = new WeakHashMap<>();
     private final WeakReference<Activity> activity;
     private final ActivityTabProvider tabs;
-    private final TextView badge;
+    private final View uiHost;
     private ActivityTabProvider.ActivityTabTabObserver tabObserver;
     private AlertDialog verdictDialog;
     private WebContents dialogContents;
     private long dialogGeneration = -1;
-    private String lastBadgeLabel = "";
     private AlertDialog accountDialog;
     private boolean accountDialogConnected;
 
@@ -59,7 +55,6 @@ public final class PhiSharkBridge {
         final String detail;
         final int urlVerdict;
         boolean warningAccepted;
-        boolean serviceErrorShown;
         boolean deepPending;
         State(int verdict, long generation, String score, String lastSafe, boolean deep, String detail, int urlVerdict) {
             this.verdict = verdict; this.generation = generation;
@@ -71,17 +66,7 @@ public final class PhiSharkBridge {
 
     private PhiSharkBridge(Activity owner, ActivityTabProvider provider) {
         activity = new WeakReference<>(owner); tabs = provider;
-        badge = new TextView(owner);
-        badge.setTextSize(11); badge.setPadding(dp(12), dp(6), dp(12), dp(6));
-        badge.setTextColor(Color.WHITE);
-        badge.setContentDescription("PhiShark güvenlik paneli");
-        badge.setOnClickListener(view -> showPanel());
-        FrameLayout content = owner.findViewById(android.R.id.content);
-        FrameLayout.LayoutParams layout = new FrameLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT,
-                Gravity.TOP | Gravity.END);
-        layout.topMargin = (int) (56 * owner.getResources().getDisplayMetrics().density);
-        content.addView(badge, layout);
+        uiHost = owner.findViewById(android.R.id.content);
         // The activity owns the observer and destroys it with its tab provider.
         tabObserver = new ActivityTabProvider.ActivityTabTabObserver(tabs) {
             @Override protected void onObservingDifferentTab(Tab tab) { refresh(); }
@@ -91,7 +76,7 @@ public final class PhiSharkBridge {
             for (PhiSharkBridge window : WINDOWS.values()) window.accountChanged();
         });
         BrowserAccount.credential();
-        if (!prefs().getBoolean("phishark.onboarded.v1", false)) badge.post(() -> showAccount(true));
+        if (!prefs().getBoolean("phishark.onboarded.v1", false)) uiHost.post(() -> showAccount(true));
     }
 
     public static void install(Activity owner, ActivityTabProvider tabs) {
@@ -102,12 +87,8 @@ public final class PhiSharkBridge {
         PhiSharkBridge bridge = WINDOWS.remove(owner);
         if (bridge == null) return;
         bridge.tabObserver.destroy();
-        bridge.badge.animate().cancel();
         if (bridge.verdictDialog != null) bridge.verdictDialog.dismiss();
         if (bridge.accountDialog != null) bridge.accountDialog.dismiss();
-        if (bridge.badge.getParent() instanceof ViewGroup) {
-            ((ViewGroup) bridge.badge.getParent()).removeView(bridge.badge);
-        }
         bridge.dialogContents = null;
     }
 
@@ -159,40 +140,17 @@ public final class PhiSharkBridge {
 
     private void refresh() {
         WebContents contents = current(); State state = STATES.get(contents);
-        String label = "PhiShark · " + statusLabel(state);
-        badge.setText(label);
-        int accent = state != null && state.verdict == 3 ? Color.rgb(255, 117, 117)
-                : state != null && (state.verdict == 2 || state.verdict == 5) ? Color.rgb(255, 202, 91)
-                : state == null || state.verdict == 4 ? Color.rgb(171, 190, 198)
-                : state.deepPending || state.verdict == 0 ? Color.rgb(0, 185, 214)
-                : Color.rgb(0, 240, 152);
-        GradientDrawable background = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT,
-                new int[] {Color.rgb(9, 35, 48), Color.rgb(15, 60, 70)});
-        background.setCornerRadius(dp(16));
-        background.setStroke(dp(1), accent);
-        badge.setBackground(background);
-        // A short transition on a changed label, never an endless loading loop.
-        // Respect the system animation setting and keep the status text readable.
-        if (!label.equals(lastBadgeLabel)) {
-            badge.animate().cancel();
-            badge.setAlpha(1f);
-            if (!lastBadgeLabel.isEmpty() && badge.isShown() && ValueAnimator.areAnimatorsEnabled()) {
-                badge.setAlpha(0.72f);
-                badge.animate().alpha(1f).setDuration(220).start();
-            }
-            lastBadgeLabel = label;
-        }
+        // Quiet by default; diagnostics remain available from the app menu.
         if (verdictDialog != null && (contents != dialogContents || state == null
                 || state.generation != dialogGeneration)) {
             verdictDialog.dismiss(); verdictDialog = null;
         }
         if (state != null && (state.verdict == 3
-                || state.verdict == 2 && state.deep && !state.warningAccepted
-                || state.verdict == 5 && !state.serviceErrorShown)) showVerdict(contents, state);
+                || state.verdict == 2 && state.deep && !state.warningAccepted)) showVerdict(contents, state);
     }
 
     private int dp(int value) {
-        return Math.round(value * badge.getResources().getDisplayMetrics().density);
+        return Math.round(value * uiHost.getResources().getDisplayMetrics().density);
     }
 
     private void returnToSafety(WebContents contents, State expected) {
@@ -227,7 +185,11 @@ public final class PhiSharkBridge {
             if (verdictDialog == created) { verdictDialog = null; dialogContents = null; }
         });
         verdictDialog = created; verdictDialog.show();
-        if (serviceError) state.serviceErrorShown = true;
+    }
+
+    public static void showPanel(Activity owner) {
+        PhiSharkBridge bridge = WINDOWS.get(owner);
+        if (bridge != null) bridge.showPanel();
     }
 
     private void showPanel() {
@@ -325,7 +287,7 @@ public final class PhiSharkBridge {
                 .setNeutralButton("Anahtarı sil", (d, which) -> {
                     try { vault().clear(); prefs().edit().remove(CONSENT)
                             .putLong(VERSION, getSettingsVersion() + 1).apply(); }
-                    catch (Exception ignored) { badge.setText("PhiShark · Anahtar silinemedi"); }
+                    catch (Exception ignored) { new AlertDialog.Builder(owner).setMessage("Anahtar silinemedi.").setPositiveButton("Kapat", null).show(); }
                 }).create();
         dialog.setOnShowListener(d -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {
             byte[] bytes = null;

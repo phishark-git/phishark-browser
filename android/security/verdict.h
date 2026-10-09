@@ -11,6 +11,15 @@
 namespace phishark {
 enum class Profile { kPreflight, kDeep };
 enum class Verdict { kChecking, kSafe, kWarning, kBlocked, kUnverified, kServiceError };
+// Canonical URLs exclude fragments. A repeated callback for this navigation or
+// a same-document event on the committed URL must retain the active scan. A
+// reload/new document and a changed path/query still create a new generation.
+inline bool ReuseNavigationScan(uint64_t generation, int64_t active_id,
+    std::string_view active_url, int64_t incoming_id, std::string_view incoming_url,
+    bool same_document, bool active_committed) {
+  return generation != 0 && active_url == incoming_url
+      && (active_id == incoming_id || (same_document && active_committed));
+}
 struct Result {
   std::string profile;
   std::optional<double> score;

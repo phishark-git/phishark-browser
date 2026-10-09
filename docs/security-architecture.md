@@ -12,7 +12,7 @@ Internal missing token returns unavailable; bad token returns unauthorized. Back
 
 Each tab has a monotonically increasing navigation generation. Begin cancels old work. Only matching results may change state. A confirmed block is sticky for that navigation and cannot be reopened by a late safe result. Redirects get a new target check; popup/restore/intent/history/same-document paths need native integration tests. The native security screen offers return to the last confirmed safe page, or a new tab if none exists; it is excluded from scanning.
 
-Preflight runs before document navigation where the engine allows. A medium preflight result resumes with a provisional risk indicator and schedules deep analysis. Deep warnings pause interaction and offer back or continuation for this navigation only. Confirmed threat and prompt-policy blocks provide no bypass. Post-load detection stops the page and replaces it, but cannot undo previously executed JavaScript.
+Preflight runs before document navigation where the engine allows. A medium preflight result remains provisional and schedules deep analysis. Android uses quiet browsing: no floating badge for checking, low risk, partial coverage or errors. Details and account controls remain accessible through the PhiShark app-menu entry. Deep warnings pause interaction and offer back or continuation for this navigation only. Confirmed threat and prompt-policy blocks provide no bypass. Post-load detection stops the page and replaces it, but cannot undo previously executed JavaScript. Silent errors still remain unverified/service-error internally; they never imply safety.
 
 ## Privacy and deadlines
 
@@ -24,7 +24,7 @@ Caches are memory-only, per normal/private session: preflight 600 seconds and de
 
 The JS code is an executable reference. Android's applied overlay owns native
 throttle/commit observers, bounded HTTPS transport, per-tab memory caches,
-generation cancellation, JNI vault access and a native status/settings/dialog UI.
+generation cancellation, JNI vault access and native menu/settings/risk dialogs.
 Its C++ and Java source compile checks passed against the actual Chromium SDK;
 the actual x64 APK passed basic preflight/deep block, return-to-safety and private
 URL-only emulator checks. C++ policy is tested

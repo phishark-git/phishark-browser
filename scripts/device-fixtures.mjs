@@ -6,7 +6,8 @@ import {pathToFileURL} from 'node:url';
 
 export const scenarios=['safe','preflight-warning','preflight-block','deep-warning','deep-block',
   'prompt-suspicious','prompt-malicious','degraded','negative','malformed','temporary',
-  'auth','quota','configuration','capacity','stall','capture','popup','same-document'];
+  'auth','quota','configuration','capacity','stall','capture','popup','same-document',
+  'duplicate-history','duplicate-history-slow'];
 
 function page(name) {
   const links=scenarios.map(x=>`<li><a href="/pages/${x}">${x}</a></li>`).join('');
@@ -26,13 +27,21 @@ function page(name) {
 document.getElementById('popup').onclick=()=>window.open('/pages/deep-block','fixture-popup');
 document.getElementById('history').onclick=()=>history.pushState({},'',location.pathname+'?sameDocument=fixture');
 document.getElementById('shadow').attachShadow({mode:'open'}).innerHTML='<label>Shadow field <input value="fixture-private-shadow"></label>';
+if (${JSON.stringify(name)}.startsWith('duplicate-history')) {
+  // Change evidence between events: a body-hash cache must not hide duplicates.
+  for (let i=1;i<=5;i++) setTimeout(()=>{
+    document.querySelector('h1').textContent='duplicate-history event '+i;
+    history.replaceState({event:i},'',location.pathname+location.search+'#event'+i);
+  }, i*800);
+}
 </script></body></html>`;
 }
 
 export function createFixtureServer({stallMs=30000}={}) {
   const stats={preflight:0,deep:0,privacyRejected:0,capacityRetries:0,
     pageGets:Object.fromEntries(scenarios.map(name=>[name,0])),redirectGets:0,
-    redirectPreflights:0};
+    redirectPreflights:0,
+    requests:Object.fromEntries(scenarios.map(name=>[name,{preflight:0,deep:0}]))};
   const capacitySeen=new Set();
   const send=(res,status,body)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify(body));};
   const server=http.createServer(async(req,res)=>{
@@ -75,6 +84,7 @@ export function createFixtureServer({stallMs=30000}={}) {
     const scenario=redirectTarget?'safe':target.pathname.split('/')[2]||'safe';
     if(redirectTarget&&!deep)stats.redirectPreflights++;
     if(!scenarios.includes(scenario))return send(res,400,{code:'FIXTURE_SCENARIO'});
+    stats.requests[scenario][deep?'deep':'preflight']++;
     if(scenario==='auth')return send(res,401,{code:'INVALID_API_KEY'});
     if(scenario==='quota')return send(res,429,{code:'QUOTA_EXCEEDED'});
     if(scenario==='configuration')return send(res,503,{code:'BROWSER_NOT_CONFIGURED'});
@@ -102,6 +112,10 @@ export function createFixtureServer({stallMs=30000}={}) {
     if(scenario==='stall'){
       res.writeHead(200,{'Content-Type':'application/json'});res.flushHeaders();
       const timer=setTimeout(()=>res.end(JSON.stringify(result)),stallMs);
+      res.once('close',()=>clearTimeout(timer));return;
+    }
+    if(scenario==='duplicate-history-slow'&&deep){
+      const timer=setTimeout(()=>send(res,200,result),3000);
       res.once('close',()=>clearTimeout(timer));return;
     }
     return send(res,200,result);

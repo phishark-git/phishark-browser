@@ -139,17 +139,28 @@ class TabProtection final : public content::WebContentsObserver,
  public:
   using Completion = base::OnceCallback<void(bool)>;
   ~TabProtection() override = default;
-  void Preflight(const GURL& target, int64_t navigation_id, Completion completion) {
+  void Preflight(const GURL& target, int64_t navigation_id, bool same_document, Completion completion) {
+    if (settings_version_ == Java_PhiSharkBridge_getSettingsVersion(base::android::AttachCurrentThread())
+        && ReuseNavigationScan(generation_, navigation_id_, target_.spec(), navigation_id,
+        target.GetWithoutRef().spec(), same_document, committed_generation_ == generation_)) {
+      // Join an unfinished URL check; do not resume a duplicate throttle before
+      // that check's decision. Never cancel a running deep scan for a hash event.
+      if (preflight_pending_) completions_.push_back(std::move(completion));
+      else base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE,
+          base::BindOnce(std::move(completion), session_.verdict() == Verdict::kBlocked));
+      return;
+    }
     Begin(target);
     navigation_id_ = navigation_id;
+    preflight_pending_ = true;
+    completions_.push_back(std::move(completion));
     if (!CanScanTarget(target)) {
       detail_ = UseLocalFixtures() ? "Yerel test modu açık; gerçek siteler bu modda analiz edilmez."
           : "Bu adres genel internet sayfası olarak taranamıyor.";
-      completion_ = std::move(completion);
       base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE,
           base::BindOnce(&TabProtection::Unavailable, weak_factory_.GetWeakPtr(), false, detail_)); return;
     }
-    Start(Profile::kPreflight, std::nullopt, std::move(completion));
+    Start(Profile::kPreflight, std::nullopt);
   }
   void ObserveResponse(content::NavigationHandle* handle) {
     if (handle->GetNavigationId() != navigation_id_
@@ -180,7 +191,8 @@ class TabProtection final : public content::WebContentsObserver,
     capture_started_generation_ = 0;
     resolved_generation_ = 0; resolved_public_ = false;
     replacing_blocked_document_ = false;
-    loader_.reset(); completion_.Reset(); weak_factory_.InvalidateWeakPtrs();
+    loader_.reset(); completions_.clear(); preflight_pending_ = false;
+    weak_factory_.InvalidateWeakPtrs();
     Update(Profile::kPreflight, "");
   }
   void Update(Profile profile, const std::string& score) {
@@ -203,7 +215,8 @@ class TabProtection final : public content::WebContentsObserver,
     }
     // Commit paths not covered by a throttle are observed explicitly.
     if (navigation_id_ != handle->GetNavigationId() || target_ != handle->GetURL().GetWithoutRef()) {
-      Preflight(handle->GetURL(), handle->GetNavigationId(), base::BindOnce([](bool) {}));
+      Preflight(handle->GetURL(), handle->GetNavigationId(), handle->IsSameDocument(),
+          base::BindOnce([](bool) {}));
     }
     committed_generation_ = generation_;
     if (handle->IsSameDocument() && session_.verdict() != Verdict::kBlocked) Capture();
@@ -219,7 +232,7 @@ class TabProtection final : public content::WebContentsObserver,
   }
   void DocumentOnLoadCompletedInPrimaryMainFrame() override { Capture(); }
   void WebContentsDestroyed() override {
-    loader_.reset(); completion_.Reset(); ClearBody(); cache_.clear(); session_.Close();
+    loader_.reset(); completions_.clear(); ClearBody(); cache_.clear(); session_.Close();
     weak_factory_.InvalidateWeakPtrs();
   }
   void Capture() {
@@ -228,7 +241,8 @@ class TabProtection final : public content::WebContentsObserver,
     session_.SetConsent(Java_PhiSharkBridge_hasDeepConsent(env) || UseLocalFixtures());
     if (!session_.CanCapture() || session_.verdict() == Verdict::kServiceError
         || !CanScanTarget(target_) || committed_generation_ != generation_
-        || loader_ || web_contents()->GetLastCommittedURL().GetWithoutRef() != target_) return;
+        || preflight_pending_ || loader_
+        || web_contents()->GetLastCommittedURL().GetWithoutRef() != target_) return;
     auto* frame = web_contents()->GetPrimaryMainFrame();
     if (!frame || !frame->IsRenderFrameLive()) return;
     if (!PublicDocumentConnection::GetForCurrentDocument(frame)) {
@@ -259,12 +273,12 @@ class TabProtection final : public content::WebContentsObserver,
     base::DictValue evidence; evidence.Set("response", std::move(response));
     // No screenshot is transmitted until native pixel masking is verified.
     evidence.Set("capture_coverage", "partial_html_no_screenshot");
-    Start(Profile::kDeep, std::move(evidence), base::BindOnce([](bool) {}));
+    Start(Profile::kDeep, std::move(evidence));
   }
-  void Start(Profile profile, std::optional<base::DictValue> evidence, Completion completion) {
+  void Start(Profile profile, std::optional<base::DictValue> evidence) {
     auto version = Java_PhiSharkBridge_getSettingsVersion(base::android::AttachCurrentThread());
     if (version != settings_version_) { cache_.clear(); settings_version_ = version; }
-    profile_ = profile; completion_ = std::move(completion); attempt_ = 0; auth_retried_ = false;
+    profile_ = profile; attempt_ = 0; auth_retried_ = false;
     detail_.clear();
     base::DictValue body; body.Set("target", target_.spec());
     if (evidence) body.Set("web_evidence", std::move(*evidence));
@@ -343,7 +357,18 @@ class TabProtection final : public content::WebContentsObserver,
   void Unavailable(bool service_error, std::string detail = "Analiz tamamlanamadı; bağlantı veya hizmet geçici olarak kullanılamıyor.") {
     detail_ = std::move(detail);
     loader_.reset(); ClearBody(); session_.Unavailable(generation_, service_error); Update(profile_, "");
-    if (completion_) std::move(completion_).Run(false);
+    CompletePreflight(false);
+  }
+  void CompletePreflight(bool blocked) {
+    if (!preflight_pending_) return;
+    preflight_pending_ = false;
+    auto callbacks = std::move(completions_);
+    completions_.clear();
+    auto alive = weak_factory_.GetWeakPtr();
+    for (auto& callback : callbacks) {
+      std::move(callback).Run(blocked);
+      if (!alive) return;
+    }
   }
   void ResponseReady(std::optional<std::string> body) {
     if (settings_version_ != Java_PhiSharkBridge_getSettingsVersion(base::android::AttachCurrentThread())) {
@@ -435,9 +460,9 @@ class TabProtection final : public content::WebContentsObserver,
     // or destroy its tab. Never apply the completed generation to that page.
     const auto completed_generation = generation_;
     auto alive = weak_factory_.GetWeakPtr();
-    if (completion_) std::move(completion_).Run(blocked);
+    CompletePreflight(blocked);
     if (!alive || generation_ != completed_generation) return;
-    if (blocked && profile_ == Profile::kDeep) {
+    if (blocked && (profile_ == Profile::kDeep || committed_generation_ == generation_)) {
       web_contents()->Stop();
       base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE,
           base::BindOnce(&TabProtection::ReplaceBlockedDocument, weak_factory_.GetWeakPtr(), generation_));
@@ -466,7 +491,8 @@ class TabProtection final : public content::WebContentsObserver,
   GURL target_;
   std::string detail_;
   Profile profile_ = Profile::kPreflight;
-  Completion completion_;
+  bool preflight_pending_ = false;
+  std::vector<Completion> completions_;
   std::string body_, cache_key_;
   int attempt_ = 0;
   bool auth_retried_ = false;
@@ -504,7 +530,7 @@ content::NavigationThrottle::ThrottleCheckResult NavigationThrottle::Check() {
   if (!handle->IsInPrimaryMainFrame() || !handle->GetURL().SchemeIsHTTPOrHTTPS()) return PROCEED;
   TabProtection::CreateForWebContents(handle->GetWebContents());
   auto* protection = TabProtection::FromWebContents(handle->GetWebContents());
-  protection->Preflight(handle->GetURL(), handle->GetNavigationId(),
+  protection->Preflight(handle->GetURL(), handle->GetNavigationId(), handle->IsSameDocument(),
       base::BindOnce(&NavigationThrottle::Complete, weak_factory_.GetWeakPtr()));
   return DEFER;
 }
