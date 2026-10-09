@@ -14,6 +14,12 @@ when content verification is incomplete; the real page displayed low URL risk
 with partial coverage. This does not establish successful deep analysis or refresh
 acceptance. See [runtime diagnosis](android-unverified-followup-20261009.md).
 
+Latest Android correction `bd7885ee`: the same-document repetition test changed
+from 1 preflight + 6 deep POSTs to 1 + 1, including an in-flight deep response.
+Normal browsing now has no floating status badge; the app menu exposes account
+and protection details. Query changes, redirects and native blocks were exercised
+on the updated x64 emulator. [Measured evidence](android-request-deduplication.md).
+
 | Gate | Status |
 | --- | --- |
 | Playwright implementation inspected | Complete; main and prompt-policy branches distinguished |

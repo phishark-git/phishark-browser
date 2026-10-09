@@ -15,6 +15,7 @@ function page(name) {
 <body><h1>${name}</h1><p>Synthetic local acceptance fixture. Use API key fixture-only.</p>
 <p><a href="/redirect/2">Two-hop redirect</a> · <a href="/pages/safe" target="_blank">New tab</a> · <a href="#section">Same-document anchor</a></p>
 <button id="popup">Popup</button><button id="history">Same-document history state</button>
+<button id="history-block">Same-document blocked URL</button>
 <form><label>Email <input type="email" value="fixture-private-email@example.invalid"></label>
 <label>Password <input type="password" value="fixture-private-password"></label>
 <label>Text <input value="fixture-private-text"></label><textarea>fixture-private-textarea</textarea>
@@ -26,6 +27,7 @@ function page(name) {
 <script>
 document.getElementById('popup').onclick=()=>window.open('/pages/deep-block','fixture-popup');
 document.getElementById('history').onclick=()=>history.pushState({},'',location.pathname+'?sameDocument=fixture');
+document.getElementById('history-block').onclick=()=>history.pushState({},'','/pages/preflight-block?history=fixture');
 document.getElementById('shadow').attachShadow({mode:'open'}).innerHTML='<label>Shadow field <input value="fixture-private-shadow"></label>';
 if (${JSON.stringify(name)}.startsWith('duplicate-history')) {
   // Change evidence between events: a body-hash cache must not hide duplicates.
