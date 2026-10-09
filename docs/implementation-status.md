@@ -2,6 +2,12 @@
 
 Last reviewed: 2026-10-09. Status must be updated from actual command results.
 
+Android `9c6cbe6d`: one static English indicator spans preflight, document loading
+and deep; English default resources cover PhiShark-specific UI. The actual x64
+build and targeted emulator handoff/block checks passed with unchanged request
+counts. [Validation and limits](android-continuous-scan-ui.md). Mac handoff updated;
+iOS acceptance remains independent and pending.
+
 Android `d1aebded`: per-navigation API attempt/cache/retry counters and distinct
 URL/content wait labels compiled, built and passed targeted emulator checks.
 Panel counts matched synthetic server counts, including same-document events,
