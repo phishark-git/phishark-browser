@@ -460,5 +460,202 @@
       "verdict": " Malicious "
     },
     "expected": "blocked"
+  },
+  {
+    "name": "whitelist",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "completed",
+      "risk_score": 0,
+      "short_circuit_reason": "gatekeeper_benign:whitelist"
+    },
+    "expected": "safe",
+    "skip_deep": true
+  },
+  {
+    "name": "manual allow",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "completed",
+      "risk_score": 0,
+      "short_circuit_reason": " Gatekeeper_Benign:manual_allow "
+    },
+    "expected": "safe",
+    "skip_deep": true
+  },
+  {
+    "name": "unknown low score",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "completed",
+      "risk_score": 0,
+      "short_circuit_reason": ""
+    },
+    "expected": "safe",
+    "skip_deep": false
+  },
+  {
+    "name": "benign verdict alone",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "completed",
+      "risk_score": 0,
+      "short_circuit_reason": "",
+      "verdict": "benign"
+    },
+    "expected": "safe",
+    "skip_deep": false
+  },
+  {
+    "name": "whitelist degraded",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "completed",
+      "risk_score": 0,
+      "short_circuit_reason": "gatekeeper_benign:whitelist",
+      "analysis_degraded": true
+    },
+    "expected": "unverified",
+    "skip_deep": false
+  },
+  {
+    "name": "whitelist missing score",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "completed",
+      "risk_score": null,
+      "short_circuit_reason": "gatekeeper_benign:whitelist"
+    },
+    "expected": "unverified",
+    "skip_deep": false
+  },
+  {
+    "name": "whitelist without numeric analysis",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "completed",
+      "risk_score": null,
+      "short_circuit_reason": "gatekeeper_benign:whitelist",
+      "verdict": "benign"
+    },
+    "expected": "safe",
+    "skip_deep": true
+  },
+  {
+    "name": "whitelist invalid numeric type",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "completed",
+      "risk_score": "0",
+      "short_circuit_reason": "gatekeeper_benign:whitelist",
+      "verdict": "benign"
+    },
+    "expected": "unverified",
+    "skip_deep": false
+  },
+  {
+    "name": "whitelist negative score",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "completed",
+      "risk_score": -1,
+      "short_circuit_reason": "gatekeeper_benign:whitelist"
+    },
+    "expected": "unverified",
+    "skip_deep": false
+  },
+  {
+    "name": "whitelist missing completion",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": null,
+      "risk_score": 0,
+      "short_circuit_reason": "gatekeeper_benign:whitelist"
+    },
+    "expected": "safe",
+    "skip_deep": false
+  },
+  {
+    "name": "whitelist failed",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "failed",
+      "risk_score": 0,
+      "short_circuit_reason": "gatekeeper_benign:whitelist"
+    },
+    "expected": "unverified",
+    "skip_deep": false
+  },
+  {
+    "name": "whitelist conflicting threat",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "completed",
+      "risk_score": 0,
+      "short_circuit_reason": "gatekeeper_benign:whitelist",
+      "verdict": "malicious"
+    },
+    "expected": "blocked",
+    "skip_deep": false
+  },
+  {
+    "name": "whitelist conflicting warning",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "completed",
+      "risk_score": 31,
+      "short_circuit_reason": "gatekeeper_benign:whitelist"
+    },
+    "expected": "warning",
+    "skip_deep": false
+  },
+  {
+    "name": "whitelist conflicting block",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "completed",
+      "risk_score": 86,
+      "short_circuit_reason": "gatekeeper_benign:whitelist"
+    },
+    "expected": "blocked",
+    "skip_deep": false
+  },
+  {
+    "name": "deep cannot grant whitelist bypass",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "browser_deep_scan",
+      "status": "completed",
+      "risk_score": 0,
+      "short_circuit_reason": "gatekeeper_benign:whitelist"
+    },
+    "expected": "unverified",
+    "skip_deep": false
+  },
+  {
+    "name": "blacklist low score",
+    "profile": "preflight",
+    "response": {
+      "scan_profile": "preflight",
+      "status": "completed",
+      "risk_score": 0,
+      "short_circuit_reason": "gatekeeper_malicious:blacklist"
+    },
+    "expected": "blocked",
+    "skip_deep": false
   }
 ]

@@ -7,7 +7,7 @@
     "max_response_bytes":1048576, "max_evidence_bytes":9437184
   },
   "privacy": {"private_mode":"url_only","cache":"memory_only","deep_consent_required":true,"persistent_scan_records":false},
-  "policy": {"preflight_block_score":86,"deep_block_score":61,"warning_score":31,"temporary_failure":"unverified_allow","confirmed_threat_bypass":false},
+  "policy": {"preflight_block_score":86,"deep_block_score":61,"warning_score":31,"temporary_failure":"unverified_allow","confirmed_threat_bypass":false,"skip_deep":"valid_safe_preflight_with_gatekeeper_benign_short_circuit"},
   "evidence_limits": {"html_bytes":3145728,"screenshot_base64_bytes":4194304,"links":500,"redirects":20,"prompt_chunks":4,"prompt_chars":10000},
   "response_fields": ["scan_id","target","verdict","risk_calculation","scan_profile","decision_profile","scoring_version","score_namespace","model_applied","analysis_degraded","incomplete_modules","module_availability","execution_time_ms","short_circuit_reason"]
 }

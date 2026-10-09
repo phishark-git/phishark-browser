@@ -45,12 +45,22 @@ inline Verdict Decide(Profile profile, const Result& result) {
       reason.rfind("gatekeeper_malicious:", 0) == 0 ||
       reason == "prompt_injection_detected" || reason == "prompt_injection_suspected")
     return Verdict::kBlocked;
+  // Gatekeeper may complete a known-allow lookup without a numeric analysis.
+  if (profile == Profile::kPreflight && result.status == "completed" && !result.degraded
+      && !result.score && (v == "benign" || v == "safe" || v == "allowed")
+      && reason.rfind("gatekeeper_benign:", 0) == 0) return Verdict::kSafe;
   if ((!result.status.empty() && result.status != "completed") || !result.score ||
       !std::isfinite(*result.score) || *result.score < 0 || *result.score > 100)
     return Verdict::kUnverified;
   if (*result.score >= (profile == Profile::kPreflight ? 86 : 61)) return Verdict::kBlocked;
   if (result.degraded) return Verdict::kUnverified;
   return *result.score >= 31 ? Verdict::kWarning : Verdict::kSafe;
+}
+// A low fast-analysis score is not an allowlist match. Only the server's
+// explicit Gatekeeper short circuit can skip page capture and deep analysis.
+inline bool TrustedPreflight(const Result& result) {
+  return result.status == "completed" && Decide(Profile::kPreflight, result) == Verdict::kSafe &&
+      Normalize(result.short_circuit_reason).rfind("gatekeeper_benign:", 0) == 0;
 }
 
 // One instance per WebContents. Browser-process ownership only; a renderer
@@ -61,12 +71,16 @@ class NavigationSession {
   uint64_t Begin(std::string canonical_url) {
     ++generation_; url_ = std::move(canonical_url); verdict_ = Verdict::kChecking;
     url_verdict_ = Verdict::kUnverified;
+    trusted_preflight_ = false;
     warning_accepted_ = false; return generation_;
   }
   bool Apply(uint64_t generation, Profile profile, const Result& result) {
     if (generation != generation_ || verdict_ == Verdict::kBlocked) return false;
     verdict_ = Decide(profile, result);
-    if (profile == Profile::kPreflight) url_verdict_ = verdict_;
+    if (profile == Profile::kPreflight) {
+      url_verdict_ = verdict_;
+      trusted_preflight_ = TrustedPreflight(result);
+    }
     if (verdict_ == Verdict::kSafe && profile == Profile::kDeep) last_safe_url_ = url_;
     return true;
   }
@@ -79,16 +93,17 @@ class NavigationSession {
     if (generation != generation_ || verdict_ != Verdict::kWarning) return false;
     warning_accepted_ = true; return true;
   }
-  bool CanCapture() const { return consent_ && !private_mode_ && verdict_ != Verdict::kBlocked; }
+  bool CanCapture() const { return consent_ && !private_mode_ && !trusted_preflight_
+      && verdict_ != Verdict::kBlocked; }
   void SetConsent(bool consent) { consent_ = consent; }
-  void Close() { ++generation_; url_.clear(); last_safe_url_.clear(); verdict_ = Verdict::kUnverified; url_verdict_ = Verdict::kUnverified; consent_ = false; }
+  void Close() { ++generation_; url_.clear(); last_safe_url_.clear(); verdict_ = Verdict::kUnverified; url_verdict_ = Verdict::kUnverified; consent_ = false; trusted_preflight_ = false; }
   Verdict verdict() const { return verdict_; }
   // Retain the URL-only result as context, never as a replacement deep verdict.
   Verdict url_verdict() const { return url_verdict_; }
   const std::string& last_safe_url() const { return last_safe_url_; }
  private:
   uint64_t generation_ = 0;
-  bool private_mode_, consent_ = false, warning_accepted_ = false;
+  bool private_mode_, consent_ = false, warning_accepted_ = false, trusted_preflight_ = false;
   Verdict verdict_ = Verdict::kUnverified;
   Verdict url_verdict_ = Verdict::kUnverified;
   std::string url_, last_safe_url_;

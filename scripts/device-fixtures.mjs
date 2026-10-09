@@ -7,7 +7,7 @@ import {pathToFileURL} from 'node:url';
 export const scenarios=['safe','preflight-warning','preflight-block','deep-warning','deep-block',
   'prompt-suspicious','prompt-malicious','degraded','negative','malformed','temporary',
   'auth','quota','configuration','capacity','stall','capture','popup','same-document',
-  'duplicate-history','duplicate-history-slow','handoff-slow'];
+  'duplicate-history','duplicate-history-slow','handoff-slow','whitelist','blacklist'];
 
 function page(name) {
   const links=scenarios.map(x=>`<li><a href="/pages/${x}">${x}</a></li>`).join('');
@@ -51,6 +51,10 @@ export function createFixtureServer({stallMs=30000}={}) {
     if(req.method==='GET') {
       if(route.pathname==='/stats')return send(res,200,stats);
       if(route.pathname==='/download'){res.writeHead(200,{'Content-Type':'text/plain','Content-Disposition':'attachment; filename="fixture.txt"'});return res.end('Synthetic download fixture\n');}
+      if(route.pathname==='/redirect/whitelist'){
+        stats.redirectGets++;
+        res.writeHead(302,{Location:'/pages/deep-block?from=whitelist'});return res.end();
+      }
       if(/^\/redirect\/[12]$/.test(route.pathname)){
         stats.redirectGets++;
         res.writeHead(302,{Location:route.pathname.endsWith('/2')?'/redirect/1':'/pages/safe?redirect=fixture'});return res.end();
@@ -113,7 +117,14 @@ export function createFixtureServer({stallMs=30000}={}) {
         scenario==='preflight-block'&&!deep?86:
         scenario==='preflight-warning'&&!deep?31:
         scenario==='deep-warning'&&deep?31:
-        scenario==='deep-block'&&deep?61:0}}};
+        ['deep-block','whitelist'].includes(scenario)&&deep?61:0}}};
+    if(!deep&&scenario==='whitelist'){
+      result.data.verdict='benign';result.data.short_circuit_reason='gatekeeper_benign:whitelist';
+      delete result.data.risk_calculation; // Server short circuits may have no numeric analysis.
+    }
+    if(!deep&&scenario==='blacklist'){
+      result.data.verdict='malicious';result.data.short_circuit_reason='gatekeeper_malicious:blacklist';
+    }
     if(deep&&scenario.startsWith('prompt-')){
       result.data.verdict='blocked';result.data.risk_calculation.risk_score=100;
       result.data.short_circuit_reason=scenario==='prompt-suspicious'?'prompt_injection_suspected':'prompt_injection_detected';

@@ -42,6 +42,22 @@ değişikliklerini birlikte koruyun. Tek tarafı topluca seçmeyin.
 
 ## İlk açılış deneyimi
 
+### Gatekeeper whitelist düzeltmesi (9 Ekim)
+
+Ortak dalın Swift `ScanResult.trustedPreflight` ve `NavigationSession.canCapture`
+değişikliğini de alın. Tamamlanmış, degraded olmayan
+`short_circuit_reason: gatekeeper_benign:*` sonucu deep/HTML capture başlatmamalı.
+Gatekeeper unknown ise düşük preflight skoru bile içerik analizine devam etmeli;
+blacklist kesin engeldir. Whitelist sonucunda bekleme göstergesi bitsin ve
+`didFinish`/response/popup/restore callback'leri sonradan deep başlatmasın.
+Redirect hedefi kendi preflight'ını almalı; izin yeni generation'a taşınmamalı.
+Sayısal analiz yapılmayan whitelist cevabında skor yoksa benign/safe/allowed
+kararıyla explicit allow kabul edilir; geçersiz/degraded cevap allow sayılmaz.
+Swift paketindeki 58 ortak vektörü ve yeni redirect/allow testini `swift test`
+ile çalıştırın. Native adapter ve WebKit entegrasyonunu Mac'te ayrıca doğrulayın:
+whitelist 1 preflight/0 deep, unknown 1/1, blacklist 1/0; whitelist → unknown
+redirect deep'i atlamamalı. [Sözleşme/kanıt](../docs/gatekeeper-navigation-routing.md).
+
 1. App icon, açılış ekranı ve karşılama başlığı **PhiShark Browser** olsun.
 2. Ana eylem **PhiShark'a giriş yap**; ikinci eylem **Şimdilik atla**.
 3. Hesap bağlıysa güvenli cihaz oturumunu yükleyin; her açılışta giriş istemeyin.

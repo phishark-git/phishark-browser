@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {createFixtureServer} from '../scripts/device-fixtures.mjs';
 import {BrowserClient} from '../shared/security-contract/client.mjs';
 import {profiles} from '../shared/security-contract/policy.mjs';
+import {NavigationSession} from '../shared/security-contract/navigation.mjs';
 
 test('local HTTP fixtures exercise real transport, verdicts, privacy and stalled-body cancellation',async t=>{
   const fixture=createFixtureServer({stallMs:1000});
@@ -44,4 +45,39 @@ test('local HTTP fixtures exercise real transport, verdicts, privacy and stalled
   assert.equal((await client.scan(profiles.preflight,`${baseURL}/pages/safe`,{privateMode:true})).policy,'safe');
   const controller=new AbortController();const pending=client.scan(profiles.preflight,`${baseURL}/pages/stall`,{signal:controller.signal});
   controller.abort();assert.equal((await pending).cancelled,true);
+});
+test('Gatekeeper whitelist skips deep; unknown runs deep; blacklist never loads; redirect is checked independently',async t=>{
+  const fixture=createFixtureServer();
+  await new Promise(resolve=>fixture.server.listen(0,'127.0.0.1',resolve));
+  t.after(()=>fixture.close());
+  const baseURL=`http://127.0.0.1:${fixture.server.address().port}`;
+  const client=new BrowserClient({baseURL,apiKey:'fixture-only'});
+  const tab=new NavigationSession({consent:true});
+  async function navigate(path) {
+    const target=baseURL+path,generation=tab.begin(target);
+    const preflight=await client.scan(profiles.preflight,target);
+    tab.apply(generation,profiles.preflight,preflight.data);
+    if(tab.state.policy==='blocked')return;
+    const page=await fetch(target,{redirect:'manual'});
+    if(page.status===302)return navigate(page.headers.get('location'));
+    const html=await page.text();
+    if(tab.canCapture()){
+      const deep=await client.scan(profiles.deep,target,{consent:true,evidence:{response:{html:'<html>sanitized fixture</html>'}}});
+      tab.apply(generation,profiles.deep,deep.data);
+    }
+    assert.ok(html.includes('Synthetic local acceptance fixture'));
+  }
+  await navigate('/pages/whitelist');
+  assert.deepEqual(fixture.stats.requests.whitelist,{preflight:1,deep:0});
+  assert.equal(fixture.stats.pageGets.whitelist,1);
+  await navigate('/pages/safe');
+  assert.deepEqual(fixture.stats.requests.safe,{preflight:1,deep:1});
+  await navigate('/pages/blacklist');
+  assert.deepEqual(fixture.stats.requests.blacklist,{preflight:1,deep:0});
+  assert.equal(fixture.stats.pageGets.blacklist,0);
+  await navigate('/redirect/whitelist');
+  assert.deepEqual(fixture.stats.requests.whitelist,{preflight:2,deep:0});
+  assert.deepEqual(fixture.stats.requests['deep-block'],{preflight:1,deep:1});
+  assert.equal(tab.state.policy,'blocked');
+  assert.equal(fixture.stats.privacyRejected,0);
 });

@@ -18,7 +18,10 @@ public struct ScanResult: Decodable, Sendable {
         let reason = (shortCircuitReason ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if ["unsafe", "malicious", "blocked", "phishing", "dangerous"].contains(v) ||
            reason.hasPrefix("gatekeeper_malicious:") || ["prompt_injection_detected", "prompt_injection_suspected"].contains(reason) { return .blocked }
-        guard status == nil || status == "completed", let score = riskCalculation?.riskScore ?? riskScore,
+        let score = riskCalculation?.riskScore ?? riskScore
+        if profile == .preflight && status == "completed" && analysisDegraded != true && score == nil
+            && ["benign", "safe", "allowed"].contains(v) && reason.hasPrefix("gatekeeper_benign:") { return .safe }
+        guard status == nil || status == "completed", let score,
               score.isFinite, score >= 0, score <= 100 else { return .unverified }
         if score >= (profile == .preflight ? 86 : 61) { return .blocked }
         if analysisDegraded == true { return .unverified }
@@ -27,6 +30,11 @@ public struct ScanResult: Decodable, Sendable {
     public static func decode(_ data: Data) throws -> ScanResult {
         let decoder = JSONDecoder(); decoder.keyDecodingStrategy = .convertFromSnakeCase
         return try decoder.decode(ScanResult.self, from: data)
+    }
+    public var trustedPreflight: Bool {
+        status == "completed" && decision(for: .preflight) == .safe && (shortCircuitReason ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            .hasPrefix("gatekeeper_benign:")
     }
 }
 
@@ -38,21 +46,23 @@ public struct ScanResult: Decodable, Sendable {
     public let isPrivate: Bool
     public var consent = false
     private var tasks = [Task<Void, Never>]()
+    private var trustedPreflight = false
     public init(isPrivate: Bool) { self.isPrivate = isPrivate }
     @discardableResult public func begin(_ url: URL) -> UInt64 {
         tasks.forEach { $0.cancel() }; tasks.removeAll()
-        generation &+= 1; self.url = url; state = .checking; return generation
+        generation &+= 1; self.url = url; state = .checking; trustedPreflight = false; return generation
     }
     public func track(_ task: Task<Void, Never>) { tasks.append(task) }
     @discardableResult public func apply(_ result: ScanResult, profile: ScanProfile, generation: UInt64) -> Bool {
         guard generation == self.generation, state != .blocked else { return false }
         state = result.decision(for: profile)
+        if profile == .preflight { trustedPreflight = result.trustedPreflight }
         if state == .safe && profile == .deep { lastSafeURL = url }
         return true
     }
-    public var canCapture: Bool { consent && !isPrivate && state != .blocked }
+    public var canCapture: Bool { consent && !isPrivate && !trustedPreflight && state != .blocked }
     public func close() {
         tasks.forEach { $0.cancel() }; tasks.removeAll(); generation &+= 1
-        url = nil; lastSafeURL = nil; consent = false; state = .unverified
+        url = nil; lastSafeURL = nil; consent = false; trustedPreflight = false; state = .unverified
     }
 }

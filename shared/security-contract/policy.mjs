@@ -8,10 +8,17 @@ export function decide(profile,data) {
   if(definitive.has(verdict)||reason.startsWith('gatekeeper_malicious:')||['prompt_injection_detected','prompt_injection_suspected'].includes(reason))return 'blocked';
   if(data.status&&data.status!=='completed')return 'unverified';
   const score=data.risk_calculation?.risk_score??data.risk_score;
+  if(profile===profiles.preflight && data.status==='completed' && data.analysis_degraded!==true
+    && score==null && ['benign','safe','allowed'].includes(verdict)
+    && reason.startsWith('gatekeeper_benign:'))return 'safe';
   if(typeof score!=='number'||!Number.isFinite(score)||score<0||score>100) return 'unverified';
   if(score>=(profile===profiles.preflight?86:61))return 'blocked';
   if(data.analysis_degraded===true)return 'unverified';
   return score>=31?'warning':'safe';
+}
+export function trustedPreflight(data) {
+  return data?.status==='completed' && decide(profiles.preflight,data)==='safe'
+    && String(data?.short_circuit_reason??'').trim().toLowerCase().startsWith('gatekeeper_benign:');
 }
 export function errorPolicy(status) {return status===0||status===429||[500,502,503,504].includes(status)?'unverified':'service_error';}
 export function canonicalURL(input) {

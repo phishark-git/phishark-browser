@@ -1,5 +1,11 @@
 # Implementation status
 
+Gatekeeper routing: explicit completed allow now skips HTML capture and deep;
+unknown low scores still run consented deep. Shared JS/C++/Swift source and tests
+are updated. Android build/device verification is recorded in
+[the routing report](gatekeeper-navigation-routing.md); Mac adapter checks remain
+independent and pending. Server contracts and deployment workflows are unchanged.
+
 Last reviewed: 2026-10-09. Status must be updated from actual command results.
 
 Android `9c6cbe6d`: one static English indicator spans preflight, document loading

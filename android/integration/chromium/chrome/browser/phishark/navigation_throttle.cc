@@ -2,6 +2,7 @@
 #include "chrome/browser/phishark/navigation_throttle.h"
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <map>
 #include <memory>
 #include <optional>
@@ -469,7 +470,10 @@ class TabProtection final : public content::WebContentsObserver,
     const auto* risk = data->FindDict("risk_calculation");
     const base::Value* score = risk ? risk->Find("risk_score") : nullptr;
     if (!score || score->is_none()) score = data->Find("risk_score");
-    if (score && (score->is_double() || score->is_int())) result.score = score->GetDouble();
+    if (score && !score->is_none()) {
+      if (score->is_double() || score->is_int()) result.score = score->GetDouble();
+      else result.score = std::numeric_limits<double>::quiet_NaN();
+    }
     auto verdict = Decide(profile_, result);
     if (verdict == Verdict::kSafe || verdict == Verdict::kWarning || verdict == Verdict::kBlocked) {
       if (cache_.size() >= 128) cache_.erase(cache_.begin());

@@ -1,12 +1,32 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
-import {decide,canonicalURL,publicHostname,profiles,errorPolicy} from '../shared/security-contract/policy.mjs';
+import {decide,canonicalURL,publicHostname,profiles,errorPolicy,trustedPreflight} from '../shared/security-contract/policy.mjs';
 import {VerdictCache} from '../shared/security-contract/cache.mjs';
 import {NavigationSession} from '../shared/security-contract/navigation.mjs';
 import {BrowserClient} from '../shared/security-contract/client.mjs';
 test('source-derived verdict vectors',()=>{
-  for(const v of JSON.parse(fs.readFileSync(new URL('../shared/test-vectors/decisions.json',import.meta.url))))assert.equal(decide(v.profile,v.response),v.expected,v.name);
+  for(const v of JSON.parse(fs.readFileSync(new URL('../shared/test-vectors/decisions.json',import.meta.url)))){
+    assert.equal(decide(v.profile,v.response),v.expected,v.name);
+    assert.equal(trustedPreflight(v.response),v.skip_deep??false,v.name);
+  }
+});
+test('allowlist capture bypass stays within its navigation; unknown, stale and blocked results cannot inherit it',()=>{
+  const tab=new NavigationSession({consent:true});
+  const allow={scan_profile:profiles.preflight,status:'completed',risk_score:0,short_circuit_reason:'gatekeeper_benign:whitelist'};
+  const first=tab.begin('https://allowed.example/');
+  tab.apply(first,profiles.preflight,allow);assert.equal(tab.canCapture(),false);
+  tab.unavailable(first);assert.equal(tab.canCapture(),false);
+  const redirect=tab.begin('https://unknown.example/');
+  assert.equal(tab.apply(first,profiles.preflight,allow),false);
+  tab.apply(redirect,profiles.preflight,{scan_profile:profiles.preflight,risk_score:0});
+  assert.equal(tab.canCapture(),true);
+  tab.apply(redirect,profiles.deep,{scan_profile:profiles.deep,risk_score:61});
+  assert.equal(tab.canCapture(),false);
+  assert.equal(tab.apply(redirect,profiles.preflight,allow),false);
+  tab.close();const next=tab.begin('https://new.example/');
+  tab.apply(next,profiles.preflight,{scan_profile:profiles.preflight,risk_score:0});
+  assert.equal(tab.canCapture(),true);
 });
 test('normalization preserves path/query, strips fragment and handles IDN/default ports',()=>{
   assert.equal(canonicalURL('https://EXAMPLE.com:443/a?token=fixture#fragment'),'https://example.com/a?token=fixture');

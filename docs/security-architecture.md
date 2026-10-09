@@ -16,6 +16,11 @@ Preflight runs before document navigation where the engine allows. A medium pref
 
 ## Privacy and deadlines
 
+Completed, non-degraded explicit Gatekeeper preflight allow
+(`gatekeeper_benign:*`) skips page capture/deep for that navigation. A low score
+alone does not. Unknown targets retain consented deep; every redirect target is
+checked separately. [Routing contract](gatekeeper-navigation-routing.md).
+
 Normal-mode consent must explain full URL transmission including query and page content analysis. Private mode is URL-only even if normal consent exists. Cookies, authorization headers and form values are excluded. Screenshot input regions must be masked before sending; frame scaling, scrolling, shadow DOM and custom editable controls require device verification. If sanitization or masking cannot be established, omit that evidence and display unverified rather than sending unsafe capture.
 
 Caches are memory-only, per normal/private session: preflight 600 seconds and deep 120 seconds keyed by canonical URL plus evidence hash. Clear private cache on private-session teardown; pending requests cannot repopulate it. Requests are deduplicated and cancelable. End-to-end client deadlines are 10/20 seconds including response consumption and at most one capacity-429 retry. Quota errors are not capacity retries. Temporary errors stay unverified; service setup/auth/quota errors are distinct.
