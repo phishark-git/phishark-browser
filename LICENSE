@@ -1,0 +1,14 @@
+PhiShark Browser is a multi-license source distribution.
+
+android/upstream: Cromite's original patch-specific GPL licenses and Chromium's
+third-party notices apply. Preserve and consult android/upstream/LICENSE and
+the license headers of every patch. PhiShark Android modifications are GPL-3.0-only.
+
+ios/upstream: Mozilla Public License 2.0 and original third-party licenses apply.
+PhiShark iOS modifications are MPL-2.0. Consult ios/upstream/LICENSE.
+
+shared and scripts: Apache License 2.0 (see LICENSES/Apache-2.0.txt).
+Documentation: Apache License 2.0 unless an upstream notice specifies otherwise.
+
+No license to Mozilla, Firefox, Cromite or other third-party trademarks is granted.
+This notice does not relicense any upstream or third-party work.

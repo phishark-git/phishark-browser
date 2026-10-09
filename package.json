@@ -1,0 +1,11 @@
+{
+  "name": "phishark-browser-contract",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "check:upstream": "node scripts/check-upstream.mjs"
+  },
+  "engines": { "node": ">=22" }
+}
