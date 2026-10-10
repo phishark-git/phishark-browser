@@ -151,12 +151,18 @@ public final class PhiSharkBridge {
 
     @CalledByNative private static void updateRequestCounts(
             @JniType("content::WebContents*") WebContents contents, long generation,
-            int preflight, int deep, int preflightCache, int deepCache, int authRetry, int capacityRetry) {
+            int preflight, int deep, int preflightCache, int deepCache, int authRetry, int capacityRetry,
+            int htmlBytes, int pngBytes, int httpStatus, int networkCode) {
         State state = STATES.get(contents);
         if (state == null || state.generation != generation) return;
         state.requestCounts = text(R.string.phishark_ui_009) + preflight + text(R.string.phishark_ui_010) + deep
                 + text(R.string.phishark_ui_011) + preflightCache + text(R.string.phishark_ui_010) + deepCache
                 + text(R.string.phishark_ui_012) + authRetry + text(R.string.phishark_ui_013) + capacityRetry;
+        if (deep > 0) {
+            state.requestCounts += "\nDeep upload: HTML " + htmlBytes + " B · PNG " + pngBytes + " B"
+                    + "\nDeep response: " + (httpStatus == 0 ? "no HTTP response" : "HTTP " + httpStatus)
+                    + " · network " + networkCode;
+        }
     }
 
     private WebContents current() {

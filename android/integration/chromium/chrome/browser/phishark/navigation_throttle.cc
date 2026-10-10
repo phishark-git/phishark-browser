@@ -204,6 +204,7 @@ class TabProtection final : public content::WebContentsObserver,
     awaiting_content_ = false;
     preflight_posts_ = deep_posts_ = preflight_cache_hits_ = deep_cache_hits_ = 0;
     auth_retry_posts_ = capacity_retry_posts_ = 0;
+    deep_html_bytes_ = deep_png_bytes_ = deep_http_status_ = deep_net_error_ = 0;
     committed_generation_ = 0;
     capture_started_generation_ = 0;
     resolved_generation_ = 0; resolved_public_ = false;
@@ -228,7 +229,7 @@ class TabProtection final : public content::WebContentsObserver,
     Java_PhiSharkBridge_updateRequestCounts(base::android::AttachCurrentThread(),
         web_contents(), static_cast<int64_t>(generation_), preflight_posts_,
         deep_posts_, preflight_cache_hits_, deep_cache_hits_, auth_retry_posts_,
-        capacity_retry_posts_);
+        capacity_retry_posts_, deep_html_bytes_, deep_png_bytes_, deep_http_status_, deep_net_error_);
   }
   void DidFinishNavigation(content::NavigationHandle* handle) override {
     if (!handle->IsInPrimaryMainFrame()) return;
@@ -426,7 +427,24 @@ class TabProtection final : public content::WebContentsObserver,
     loader_->SetTimeoutDuration(remaining);
     auto* factory = web_contents()->GetBrowserContext()->GetDefaultStoragePartition()
         ->GetURLLoaderFactoryForBrowserProcess().get();
-    if (profile_ == Profile::kDeep) ++deep_posts_;
+    if (profile_ == Profile::kDeep) {
+      // Inspect the exact JSON attached for upload, never retain its contents
+      // in diagnostics. These numbers describe dispatch, not model coverage.
+      deep_html_bytes_ = deep_png_bytes_ = deep_http_status_ = deep_net_error_ = 0;
+      auto upload = base::JSONReader::Read(body_, base::JSON_PARSE_RFC);
+      const auto* evidence = upload && upload->is_dict()
+          ? upload->GetDict().FindDict("web_evidence") : nullptr;
+      const auto* response = evidence ? evidence->FindDict("response") : nullptr;
+      const auto* html = response ? response->FindString("html") : nullptr;
+      const auto* png = response ? response->FindString("screenshot") : nullptr;
+      if (html) deep_html_bytes_ = static_cast<int>(html->size());
+      if (png && !png->empty() && png->size() % 4 == 0) {
+        deep_png_bytes_ = static_cast<int>(png->size() / 4 * 3);
+        if (png->back() == '=') --deep_png_bytes_;
+        if ((*png)[png->size() - 2] == '=') --deep_png_bytes_;
+      }
+      ++deep_posts_;
+    }
     else ++preflight_posts_;
     if (next_retry_ == RetryReason::kAuth) ++auth_retry_posts_;
     if (next_retry_ == RetryReason::kCapacity) ++capacity_retry_posts_;
@@ -469,6 +487,10 @@ class TabProtection final : public content::WebContentsObserver,
       retry = loader_->ResponseInfo()->headers->GetNormalizedHeader("retry-after").value_or("");
     }
     const int net_error = loader_->NetError(); loader_.reset();
+    if (profile_ == Profile::kDeep) {
+      deep_http_status_ = status; deep_net_error_ = net_error;
+      PublishRequestCounts();
+    }
     if (status == 401 && !auth_retried_ && !UseLocalFixtures()
         && Java_PhiSharkBridge_usesAccount(base::android::AttachCurrentThread())
         && base::TimeTicks::Now() < deadline_) {
@@ -618,6 +640,8 @@ class TabProtection final : public content::WebContentsObserver,
   int preflight_posts_ = 0, deep_posts_ = 0;
   int preflight_cache_hits_ = 0, deep_cache_hits_ = 0;
   int auth_retry_posts_ = 0, capacity_retry_posts_ = 0;
+  int deep_html_bytes_ = 0, deep_png_bytes_ = 0;
+  int deep_http_status_ = 0, deep_net_error_ = 0;
   int64_t settings_version_ = -1;
   base::TimeTicks deadline_;
   std::unique_ptr<network::SimpleURLLoader> loader_;

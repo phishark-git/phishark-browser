@@ -1,5 +1,28 @@
 # Cross-repository impact check
 
+## Live upload diagnostics — 2026-10-10
+
+Queried `ScreenshotReady Send PublishRequestCounts updateRequestCounts` before
+editing (134 connected nodes), then verified native upload/JNI/panel paths and
+the browser's ephemeral API dependencies against source and SYSTEM_MAP. Only the
+Android provider of native diagnostic numbers and its Java consumer changed;
+public requests/results, backend/orchestrator/models, storage and callbacks are
+unchanged. Implementation: native/Java diagnostics, x64 build, in-place local
+install and live tests. Deployment: no server rollout. Live benign deep returned
+score 15, HTML 34,061 B, PNG 104,959 B, HTTP 200/network 0 and 1 URL/1 deep POST;
+the fresh threat check returned preflight 100 and 1 URL/0 deep POST. No retries.
+Targets/content are not retained here. Independent browser checks and x64 build
+passed; [scope and evidence](android-screenshot-evidence.md#live-upload-inspection).
+
+Browser code graph refreshed to 679 nodes / 1,399 raw edges, component 1,207
+edges with 180 unresolved external endpoints omitted. Only this component was
+reselected; other working-branch snapshots were preserved. Workspace rebuild:
+14,638 nodes / 30,979 edges, no aggregate dangling endpoints. The repeated query
+found 135 connected nodes (11 displayed at 550 tokens). Semantic document changes
+were not re-extracted; external Chromium coverage, older graph IDs and mixed
+branch snapshots remain incomplete, so the impact graph is supporting evidence,
+not proof of complete platform/production dependencies. No VDS access/deployment.
+
 ## Blocked-result inspection — 2026-10-10
 
 Browser-only UI follow-up queried `ScreenshotCapture PublishRequestCounts showVerdict`

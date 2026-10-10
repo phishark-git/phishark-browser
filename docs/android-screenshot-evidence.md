@@ -146,3 +146,43 @@ The requested target is intentionally not recorded in this public document.
 Validation: x64 APK/AAB build 4m12.63s; in-place installation and panel read passed;
 `npm test` 12/12, OAuth assertions 19/19, branding checks 5/5 passed. Native capture
 and backend code are unchanged, so earlier pixel tests retain their original scope.
+
+## Live upload inspection
+
+The protection panel now reports UTF-8 HTML bytes and decoded PNG bytes from the
+exact serialized JSON attached to each dispatched deep POST. PNG size is derived
+from the native encoder's standard padded base64. It also reports the latest deep
+HTTP status and Chromium network completion code. These are navigation-local,
+memory-only numbers; captured content, URLs and credentials are not diagnostic
+data. A new navigation clears them. Cached deep results do not claim an upload.
+Retries retain their explicit POST counters and report the latest attempt.
+
+This proves that fields are attached to the browser request and whether the deep
+endpoint replied successfully. It does not independently prove which downstream
+model consumed the evidence, server retention policy, or universal masking.
+The earlier independent synthetic receiver/pixel checks retain their own scope.
+No backend/provider schema, callback, persistence or workflow is changed.
+
+Live checks on 2026-10-10 used the connected account on the original API 35 x64
+emulator, with fixture mode verified off. The requested targets are deliberately
+excluded from this public report:
+
+| Requested navigation | Phase / result | URL / deep POSTs | HTML / PNG bytes | Deep response |
+| --- | --- | --- | --- | --- |
+| Benign page | Deep, safe, score 15 | 1 / 1 | 34,061 / 104,959 | HTTP 200, network 0 |
+| Threat target | Preflight, blocked, score 100 | 1 / 0 | No deep upload | Not applicable |
+
+Both final navigations had zero cache hits and zero authentication/capacity
+retries. The threat navigation cleared the previous page's deep diagnostics.
+An earlier benign navigation on the preceding APK also returned deep score 15;
+the fresh navigation after installing the diagnostic APK was an intentional
+manual retest, not a duplicate automatic POST. The app's HTML/PNG evidence was
+not copied to logs, disk or this repository for these real targets.
+
+Validation: x64 APK/AAB build succeeded in 4m35.21s; in-place APK installation,
+launch, live deep upload/response and native preflight block/panel reads passed.
+`npm test` 12/12, native decision vectors/invariants 58, OAuth assertions 19 and
+branding tests 5/5 passed independently. APK/AAB snapshots and their manifest are
+in ignored `.build/artifacts/live-evidence-20261010/`. These remain development
+x64 artifacts; physical ARM/iOS and downstream VLM execution are not established
+by this browser-side inspection. No deployment or VDS inspection was performed.
