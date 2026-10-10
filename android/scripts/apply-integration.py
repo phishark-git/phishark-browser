@@ -102,6 +102,7 @@ def main():
             f'      "{java}",\n      "{updater}",\n      "{vault}",\n'
             '      "java/src/io/phishark/browser/security/BrowserOAuth.java",\n'
             '      "java/src/org/chromium/chrome/browser/phishark/BrowserAccount.java",\n'
+            '      "java/src/org/chromium/chrome/browser/phishark/PhiSharkAccountSettingsActivity.java",\n'
             '      "java/src/org/chromium/chrome/browser/phishark/BrowserAccountActivity.java",\n    ]\n', 'chrome_java sources')
         text = gn_target(text, 'generate_jni("chrome_jni_headers")', lambda body:
             replace_once(body, '    sources = [\n',
@@ -175,14 +176,33 @@ def main():
             '                AppMenuItemUtils.buildModelForStandardMenuItem(\n'
             '                        mContext, getAppMenuItemTheme(), R.id.phishark_protection_id,\n'
             '                        R.string.phishark_protection_menu,\n'
-            '                        shouldShowIconBeforeItem() ? R.drawable.phishark_icon : Resources.ID_NULL,\n'
+            '                        shouldShowIconBeforeItem() ? R.drawable.ic_account_circle_24dp : Resources.ID_NULL,\n'
             '                        isMenuIconAtStart()));\n    }\n\n'
             '    private ListItem buildSettingsItem() {', 'protection menu model')
     edit('chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java', protection_menu)
+    edit('chrome/android/java/res/xml/main_preferences.xml', lambda text:
+        replace_once(text, '    android:orderingFromXml="false">',
+            '    android:orderingFromXml="false">\n'
+            '    <org.chromium.components.browser_ui.settings.ChromeBasePreference\n'
+            '        android:key="phishark_account" android:order="1"\n'
+            '        android:title="@string/phishark_protection_menu"\n'
+            '        android:summary="@string/phishark_account_settings_summary"\n'
+            '        android:icon="@drawable/phishark_icon" />', 'PhiShark settings entry'))
+    edit('chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java', lambda text:
+        replace_once(text, '        SettingsUtils.addPreferencesFromResource(this, R.xml.main_preferences);',
+            '        SettingsUtils.addPreferencesFromResource(this, R.xml.main_preferences);\n'
+            '        Preference phisharkAccount = findPreference("phishark_account");\n'
+            '        assumeNonNull(phisharkAccount).setOnPreferenceClickListener(preference -> {\n'
+            '            Activity owner = requireActivity();\n'
+            '            owner.startActivity(new Intent(owner, org.chromium.chrome.browser.phishark.PhiSharkAccountSettingsActivity.class));\n'
+            '            return true;\n'
+            '        });', 'PhiShark settings action'))
     edit('chrome/android/java/AndroidManifest.xml', lambda text:
         replace_once(replace_once(replace_once(text,
             'android:label="Cromite"', 'android:label="PhiShark Browser"', 'application label'),
             '        {% block extra_application_definitions %}',
+            '<activity android:name="org.chromium.chrome.browser.phishark.PhiSharkAccountSettingsActivity" '
+            'android:exported="false" android:label="@string/phishark_account_title"/>\n'
             '<activity android:name="org.chromium.chrome.browser.phishark.BrowserAccountActivity" '
             'android:exported="true" android:excludeFromRecents="true">\n'
             '  <intent-filter><action android:name="android.intent.action.VIEW"/>\n'

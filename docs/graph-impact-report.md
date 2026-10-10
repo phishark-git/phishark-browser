@@ -1,5 +1,35 @@
 # Cross-repository impact check
 
+## Native profile and simple account UI — 2026-10-10
+
+Before editing, queried `BrowserAccount showPanel showSettings account profile
+browser auth` (512 connected nodes) and checked the actual Android bridge,
+Settings integration, native account/vault code, backend TokenResponse/User and
+token/refresh handlers against SYSTEM_MAP. Existing `data.user` fields provide
+the profile; only the Android native account owner/UI and pinned Settings
+overlay changed. Name/email are selected into the encrypted session; no public
+schema, scope, scan policy, callback, evidence or provider change is required.
+Old clients ignore the additional session profile field. Mac receives a UI
+handoff document; implemented iOS parity is not claimed. Implementation order:
+Android account/UI and Settings, local builds, native isolated tests and emulator
+inspection. Deployment order: no server rollout; accepted clients independently.
+
+Browser tests passed 12/12, OAuth assertions 19 and branding 5/5; the separate
+no-network native profile test passed 18 assertions across two processes. Final
+x64 APK/AAB built in 3m41.95s and the installed profile/menu/Settings flow was
+inspected with the live session preserved. Actual user identity is not retained
+in this report. Live server revocation, physical Android and iOS remain separate.
+
+Browser code graph refreshed: 721 nodes / 1,545 raw edges. Component graph:
+1,339 edges, with 199 unresolved external endpoints omitted and four external
+concept nodes lacking source_file. Only the browser snapshot was reselected;
+other working branches were preserved. Workspace: 14,680 nodes / 31,111 edges,
+no aggregate dangling endpoints. Repeated original query returned 547 connected
+nodes (17 displayed at 900 tokens). Document semantics were not re-extracted;
+external Chromium/test-adapter overlap, older IDs, broad ambiguous profile/auth
+matches and mixed branch snapshots remain incomplete impact evidence. No VDS
+access, production workflow or production storage operation was performed.
+
 ## Live upload diagnostics — 2026-10-10
 
 Queried `ScreenshotReady Send PublishRequestCounts updateRequestCounts` before

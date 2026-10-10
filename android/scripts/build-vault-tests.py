@@ -15,10 +15,11 @@ import zipfile
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('source', type=Path)
+    parser.add_argument('--account-profile', action='store_true', help='Test native account profile minimization in a separate app UID')
     args = parser.parse_args()
     source = args.source.resolve(strict=True)
     repo = Path(__file__).resolve().parents[2]
-    output = repo / '.build/vault-device-tests'
+    output = repo / ('.build/account-profile-tests' if args.account_profile else '.build/vault-device-tests')
     output.mkdir(parents=True, exist_ok=True)
     sdk = source / 'third_party/android_sdk/public'
     jar = sdk / 'platforms/android-37.0/android.jar'
@@ -26,22 +27,36 @@ def main():
     jdk = source / 'third_party/jdk/current/bin'
     with tempfile.TemporaryDirectory(prefix='compile-', dir=output) as directory:
         work = Path(directory); classes = work / 'classes'; classes.mkdir()
+        unsigned = work / 'unsigned.apk'
+        test = repo / ('android/tests/account_profile' if args.account_profile else 'android/tests/vault')
+        extra = []
+        if args.account_profile:
+            resources = work / 'resources.zip'; generated = work / 'generated'
+            subprocess.run([str(tools / 'aapt2'), 'compile', '-o', str(resources),
+                str(repo / 'android/integration/chromium/chrome/android/java/res_base/values/phishark.xml')], check=True)
+            subprocess.run([str(tools / 'aapt2'), 'link', '-I', str(jar), '--manifest',
+                str(test / 'AndroidManifest.xml'), '--java', str(generated), '--custom-package',
+                'org.chromium.chrome', '-o', str(unsigned), str(resources)], check=True)
+            extra = [*map(str, generated.rglob('*.java')), str(test / 'ContextUtils.java'),
+                str(repo / 'android/security/java/io/phishark/browser/security/BrowserOAuth.java'),
+                str(repo / 'android/integration/chromium/chrome/android/java/src/org/chromium/chrome/browser/phishark/BrowserAccount.java')]
         subprocess.run([str(jdk / 'javac'), '-source', '17', '-target', '17',
-            '-cp', str(jar), '-d', str(classes),
+            '-encoding', 'UTF-8', '-cp', str(jar), '-d', str(classes),
             str(repo / 'android/security/java/io/phishark/browser/security/ApiKeyVault.java'),
-            str(repo / 'android/tests/vault/VaultInstrumentation.java')], check=True)
+            str(test / ('AccountProfileInstrumentation.java' if args.account_profile else 'VaultInstrumentation.java')),
+            *extra], check=True)
         dex = work / 'dex'; dex.mkdir()
         subprocess.run([str(jdk / 'java'), '-cp', str(source / 'third_party/r8/d8/cipd/lib/r8.jar'),
             'com.android.tools.r8.D8', '--lib', str(jar), '--min-api', '29', '--output', str(dex),
             *map(str, classes.rglob('*.class'))], check=True)
-        unsigned = work / 'unsigned.apk'
-        subprocess.run([str(tools / 'aapt2'), 'link', '-I', str(jar), '--manifest',
-            str(repo / 'android/tests/vault/AndroidManifest.xml'), '-o', str(unsigned)], check=True)
+        if not args.account_profile:
+            subprocess.run([str(tools / 'aapt2'), 'link', '-I', str(jar), '--manifest',
+                str(test / 'AndroidManifest.xml'), '-o', str(unsigned)], check=True)
         with zipfile.ZipFile(unsigned, 'a') as archive:
             for path in dex.glob('*.dex'): archive.write(path, path.name)
         aligned = work / 'aligned.apk'
         subprocess.run([str(tools / 'zipalign'), '-f', '4', str(unsigned), str(aligned)], check=True)
-        apk = output / 'PhiSharkVaultTests.apk'
+        apk = output / ('PhiSharkAccountProfileTests.apk' if args.account_profile else 'PhiSharkVaultTests.apk')
         subprocess.run([str(jdk / 'java'), '-jar', str(tools / 'lib/apksigner.jar'), 'sign',
             '--ks', str(source / 'build/android/chromium-debug.keystore'),
             '--ks-key-alias', 'chromiumdebugkey', '--ks-pass', 'pass:chromium',

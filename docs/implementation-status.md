@@ -1,5 +1,11 @@
 # Implementation status
 
+Account UI: normal menus and Settings open a native profile screen with name,
+email and Sign out. Scan diagnostics and numeric scores are excluded from normal
+account/risk UI. Existing token/refresh profile fields are minimally retained in
+the encrypted vault; no provider rollout is required. Isolated native profile
+tests passed 18 assertions. [Scope and acceptance](android-account-ui.md).
+
 Current requested UI: scanning label is deep-only, beginning at HTTP dispatch and
 ending at the terminal result. Preflight/document loading/capture/cache remain
 quiet. [Current validation and evidence audit](android-deep-only-indicator.md)

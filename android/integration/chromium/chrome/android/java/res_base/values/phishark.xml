@@ -2,7 +2,24 @@
 <!-- SPDX-License-Identifier: GPL-3.0-only -->
 <resources>
     <item type="id" name="phishark_protection_id" />
-    <string name="phishark_protection_menu" translatable="false">PhiShark · Account and protection</string>
+    <string name="phishark_protection_menu">PhiShark account</string>
+    <string name="phishark_account_title">Your account</string>
+    <string name="phishark_account_identity">PhiShark account</string>
+    <string name="phishark_account_back">Back</string>
+    <string name="phishark_account_connected">Signed in</string>
+    <string name="phishark_account_disconnected">Not signed in</string>
+    <string name="phishark_account_settings_summary">Profile and account settings</string>
+    <string name="phishark_account_protection_settings">Page protection</string>
+    <string name="phishark_page_analysis_on">Page analysis is on</string>
+    <string name="phishark_page_analysis_off">Page analysis is off</string>
+    <string name="phishark_profile_loading">Loading your profile…</string>
+    <string name="phishark_profile_unavailable">Profile details are currently unavailable.</string>
+    <string name="phishark_account_sign_in_description">Sign in to connect your PhiShark account. This browser will remember you.</string>
+    <string name="phishark_account_service_unavailable">Your account needs attention. Open your PhiShark account to continue.</string>
+    <string name="phishark_page_blocked">PhiShark blocked this page to help protect your information.</string>
+    <string name="phishark_page_warning">This page may be unsafe. Go back, or continue only if you trust it.</string>
+    <string name="phishark_sign_in_unavailable">Sign-in is currently unavailable. Please try again later.</string>
+    <string name="phishark_sign_in_failed">Sign-in could not be started. Please try again.</string>
     <string name="phishark_terms_url" translatable="false">https://phishark.io/en/legal/terms</string>
     <string name="phishark_privacy_url" translatable="false">https://phishark.io/en/legal/privacy</string>
     <string name="phishark_ui_001">"Checking"</string>
@@ -70,7 +87,7 @@
     <string name="phishark_ui_063">"No other browser was found on this device for sign-in"</string>
     <string name="phishark_ui_064">"The PhiShark Browser sign-in service is unavailable on this server (HTTP "</string>
     <string name="phishark_ui_065">"). The service needs to be deployed or configured."</string>
-    <string name="phishark_ui_066">"Too many sign-in attempts. Wait a moment and try again (HTTP 429)."</string>
+    <string name="phishark_ui_066">"Too many sign-in attempts. Wait a moment and try again."</string>
     <string name="phishark_ui_067">"The PhiShark sign-in service is currently unavailable (HTTP "</string>
     <string name="phishark_ui_068">"). Try again later."</string>
     <string name="phishark_ui_069">"The PhiShark sign-in request could not be completed (HTTP "</string>

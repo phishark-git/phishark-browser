@@ -12,7 +12,14 @@ Internal missing token returns unavailable; bad token returns unauthorized. Back
 
 Each tab has a monotonically increasing navigation generation. Begin cancels old work. Only matching results may change state. A confirmed block is sticky for that navigation and cannot be reopened by a late safe result. Redirects get a new target check; popup/restore/intent/history/same-document paths need native integration tests. The native security screen offers return to the last confirmed safe page, or a new tab if none exists; it is excluded from scanning.
 
-Preflight runs before document navigation where the engine allows. A medium preflight result remains provisional and schedules deep analysis. Android displays a small wait indicator only while the active tab is being checked; low risk, partial coverage and errors leave no floating result badge. The indicator is informational and does not itself block interaction. Details and account controls remain accessible through the PhiShark app-menu entry. Deep warnings pause interaction and offer back or continuation for this navigation only. Confirmed threat and prompt-policy blocks provide no bypass. Post-load detection stops the page and replaces it, but cannot undo previously executed JavaScript. Silent errors still remain unverified/service-error internally; they never imply safety.
+Preflight runs before document navigation where the engine allows. A medium preflight result remains provisional and schedules deep analysis. Android displays a small wait indicator only during the active tab's deep HTTP execution; low risk, partial coverage and errors leave no floating result badge. The indicator is informational and does not itself block interaction. The app menu and first Settings account row open a native profile screen; technical phase, score and transport diagnostics are excluded from normal UI. Deep warnings pause interaction and offer back or continuation for this navigation only. Confirmed threat and prompt-policy blocks provide no bypass. Post-load detection stops the page and replaces it, but cannot undo previously executed JavaScript. Silent errors still remain unverified/service-error internally; they never imply safety.
+
+Account UI exposes only name/email from the native encrypted session, selected
+from the existing token/refresh user payload. No renderer receives the session
+JSON, tokens or profile fields. The profile Activity uses FLAG_SECURE, and Sign
+out clears its encrypted profile together with credentials and consent. Existing
+sessions without profile metadata reuse bounded native refresh; no new public
+endpoint or dashboard scope is needed. [UI and test scope](android-account-ui.md).
 
 ## Privacy and deadlines
 

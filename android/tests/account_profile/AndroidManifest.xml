@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: GPL-3.0-only -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="io.phishark.browser.accounttests">
+    <uses-sdk android:minSdkVersion="29" android:targetSdkVersion="35" />
+    <!-- No Internet permission; no access to the browser's UID or credentials. -->
+    <application android:label="PhiShark account profile tests" android:allowBackup="false" />
+    <instrumentation android:name="io.phishark.browser.accounttests.AccountProfileInstrumentation"
+        android:targetPackage="io.phishark.browser.accounttests" />
+</manifest>

@@ -3,6 +3,7 @@ package org.chromium.chrome.browser.phishark;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
@@ -51,6 +52,7 @@ public final class PhiSharkBridge {
     private long dialogGeneration = -1;
     private AlertDialog accountDialog;
     private boolean accountDialogConnected;
+    private boolean lastAccountConnected;
 
     private static final class State {
         final int verdict;
@@ -103,6 +105,7 @@ public final class PhiSharkBridge {
             for (PhiSharkBridge window : WINDOWS.values()) window.accountChanged();
         });
         BrowserAccount.credential();
+        lastAccountConnected = BrowserAccount.signedIn();
         if (!prefs().getBoolean("phishark.onboarded.v1", false)) uiHost.post(() -> showAccount(true));
     }
 
@@ -178,22 +181,10 @@ public final class PhiSharkBridge {
         for (PhiSharkBridge window : WINDOWS.values()) window.refresh();
     }
 
-    private static String statusLabel(State state) {
-        if (state != null && state.awaitingContent) return text(R.string.phishark_waiting_for_content);
-        if (state == null) return text(R.string.phishark_ui_014);
-        if (state.deepPending) return (state.verdict == 2 ? text(R.string.phishark_ui_015) : "") + text(R.string.phishark_ui_016);
-        if (state.verdict == 1 && !state.deep) return text(R.string.phishark_ui_017);
-        // A URL verdict is scoped context. It never overrides a deep block,
-        // warning or service error, nor turns incomplete capture into safe.
-        if (state.verdict == 4 && state.urlVerdict == 1) return text(R.string.phishark_ui_018);
-        if (state.verdict == 4 && state.urlVerdict == 2) return text(R.string.phishark_ui_019);
-        return text(LABELS[state.verdict]);
-    }
-
     private void refresh() {
         WebContents contents = current(); State state = STATES.get(contents);
         refreshScanningIndicator(contents, state);
-        // Completed results stay quiet; diagnostics remain in the app menu.
+        // Completed results stay quiet. Account UI never exposes scan diagnostics.
         if (verdictDialog != null && (contents != dialogContents || state == null
                 || state.generation != dialogGeneration)) {
             verdictDialog.dismiss(); verdictDialog = null;
@@ -230,9 +221,8 @@ public final class PhiSharkBridge {
         boolean serviceError = state.verdict == 5;
         AlertDialog.Builder builder = new AlertDialog.Builder(owner)
                 .setTitle("PhiShark · " + text(LABELS[state.verdict]))
-                .setMessage(serviceError ? text(R.string.phishark_ui_020) + state.detail
-                        : state.score.isEmpty() ? text(R.string.phishark_ui_021)
-                        : text(R.string.phishark_ui_022) + state.score)
+                .setMessage(serviceError ? text(R.string.phishark_account_service_unavailable)
+                        : text(state.verdict == 3 ? R.string.phishark_page_blocked : R.string.phishark_page_warning))
                 .setCancelable(serviceError)
                 .setNegativeButton(serviceError ? text(R.string.phishark_ui_023) : text(R.string.phishark_ui_024), (dialog, which) -> {
                     if (!serviceError) returnToSafety(contents, state);
@@ -243,10 +233,6 @@ public final class PhiSharkBridge {
                 state.warningAccepted = true;
             }
         });
-        // Keep the current result's phase/counts inspectable even when the
-        // blocking dialog covers the app menu. This does not resume navigation.
-        if (!serviceError) builder.setNeutralButton(text(R.string.phishark_ui_032),
-                (dialog, which) -> showPanel());
         if (serviceError) builder.setPositiveButton(text(R.string.phishark_ui_026), (dialog, which) -> showAccount(false));
         AlertDialog created = builder.create();
         created.setOnDismissListener(dialog -> {
@@ -262,26 +248,18 @@ public final class PhiSharkBridge {
 
     private void showPanel() {
         Activity owner = activity.get(); if (owner == null || owner.isFinishing()) return;
-        State state = STATES.get(current());
-        new AlertDialog.Builder(owner).setTitle("PhiShark Browser")
-                .setMessage(text(R.string.phishark_ui_027) + statusLabel(state)
-                        + (state == null ? "" : text(R.string.phishark_ui_028)
-                                + (state.deepPending || state.deep ? text(R.string.phishark_ui_029) : "URL (preflight)"))
-                        + (state == null || state.score.isEmpty() ? "" : text(R.string.phishark_ui_030) + state.score)
-                        + (state == null || state.detail.isEmpty() ? "" : "\n" + state.detail)
-                        + (state == null ? "" : "\n\n" + state.requestCounts)
-                        + "\n\n" + BrowserAccount.status()
-                        + text(R.string.phishark_ui_031))
-                .setPositiveButton(text(R.string.phishark_ui_032), (dialog, which) -> showAccount(false))
-                .setNeutralButton(text(R.string.phishark_ui_033), (dialog, which) -> showAbout())
-                .setNegativeButton(text(R.string.phishark_ui_023), null).show();
+        owner.startActivity(new Intent(owner, PhiSharkAccountSettingsActivity.class));
     }
 
     private void accountChanged() {
         refresh();
-        if (accountDialog != null && BrowserAccount.signedIn() != accountDialogConnected) {
-            accountDialog.dismiss(); accountDialog = null; showAccount(false);
+        boolean connected = BrowserAccount.signedIn();
+        boolean newLogin = connected && !lastAccountConnected;
+        lastAccountConnected = connected;
+        if (accountDialog != null && connected != accountDialogConnected) {
+            accountDialog.dismiss(); accountDialog = null;
         }
+        if (newLogin && !hasDeepConsent()) showAccount(true);
     }
 
     private void showAbout() {
@@ -297,6 +275,7 @@ public final class PhiSharkBridge {
     }
 
     private void showAccount(boolean firstRun) {
+        if (!firstRun) { showPanel(); return; }
         Activity owner = activity.get();
         if (owner == null || owner.isFinishing() || accountDialog != null) return;
         LinearLayout form = new LinearLayout(owner); form.setOrientation(LinearLayout.VERTICAL);
@@ -321,7 +300,6 @@ public final class PhiSharkBridge {
                 .setNegativeButton(firstRun ? text(R.string.phishark_ui_043) : text(R.string.phishark_ui_023), (dialog, which) -> {
                     prefs().edit().putBoolean("phishark.onboarded.v1", true).apply();
                 });
-        if (connected) builder.setNeutralButton(text(R.string.phishark_ui_044), (dialog, which) -> BrowserAccount.logout());
         AlertDialog created = builder.create(); accountDialog = created;
         created.setOnDismissListener(dialog -> { if (accountDialog == created) accountDialog = null; });
         created.setOnShowListener(dialog -> created.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> {

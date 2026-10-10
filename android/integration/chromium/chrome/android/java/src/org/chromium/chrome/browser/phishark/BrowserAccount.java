@@ -42,12 +42,22 @@ public final class BrowserAccount {
     private static boolean loaded, refreshing;
     private static long epoch, retryAfter;
     private static Runnable listener;
+    private static final List<Runnable> accountListeners = new ArrayList<>();
     private static String status;
 
     private static SharedPreferences prefs() { return ContextUtils.getAppSharedPreferences(); }
     private static ApiKeyVault vault(String purpose) { return new ApiKeyVault(ContextUtils.getApplicationContext(), purpose); }
     public static synchronized void setListener(Runnable changed) { listener = changed; }
-    private static void notifyChanged() { MAIN.post(() -> { Runnable current; synchronized (BrowserAccount.class) { current = listener; } if (current != null) current.run(); }); }
+    public static synchronized void addListener(Runnable changed) { accountListeners.add(changed); }
+    public static synchronized void removeListener(Runnable changed) { accountListeners.remove(changed); }
+    private static void notifyChanged() {
+        MAIN.post(() -> {
+            Runnable current; List<Runnable> accounts;
+            synchronized (BrowserAccount.class) { current = listener; accounts = new ArrayList<>(accountListeners); }
+            if (current != null) current.run();
+            for (Runnable account : accounts) account.run();
+        });
+    }
     private static JSONObject read(String purpose) throws Exception {
         byte[] data = vault(purpose).load();
         if (data == null) return null;
@@ -71,6 +81,23 @@ public final class BrowserAccount {
     public static synchronized boolean signedIn() { load(); return enabled() && session != null; }
     public static synchronized String status() { load(); return status; }
     public static synchronized boolean isRefreshing() { return refreshing; }
+    // Only display fields leave the native account owner, never the session JSON.
+    private static String displayField(JSONObject user, String key) {
+        String value = user == null ? "" : user.optString(key, "").trim();
+        if (value.length() > 320) return "";
+        return value.replaceAll("[\\p{Cntrl}\\u202A-\\u202E\\u2066-\\u2069]", "");
+    }
+    private static String profileField(String key) {
+        load(); return signedIn() ? displayField(session.optJSONObject("profile"), key) : "";
+    }
+    public static synchronized String displayName() {
+        return (profileField("first_name") + " " + profileField("last_name")).trim();
+    }
+    public static synchronized String email() { return profileField("email"); }
+    public static synchronized void loadProfile() {
+        load();
+        if (signedIn() && session.optJSONObject("profile") == null) refresh(false);
+    }
     public static synchronized byte[] credential() {
         load();
         if (!enabled() || session == null) return null;
@@ -81,7 +108,8 @@ public final class BrowserAccount {
     public static synchronized void refresh(boolean force) {
         load();
         if (refreshing || session == null || !enabled() || System.currentTimeMillis() < retryAfter) return;
-        if (!force && session.optLong("expires_at") - System.currentTimeMillis() >= 60000) return;
+        if (!force && session.optLong("expires_at") - System.currentTimeMillis() >= 60000
+                && session.optJSONObject("profile") != null) return;
         refreshing = true;
         long generation = epoch;
         String token = session.optString("refresh_token");
@@ -116,6 +144,16 @@ public final class BrowserAccount {
                 || seconds <= 0 || seconds > 86400) throw new IllegalArgumentException("Invalid account response");
         JSONObject next = new JSONObject().put("access_token", access).put("refresh_token", refresh)
                 .put("expires_at", System.currentTimeMillis() + seconds * 1000);
+        JSONObject user = data.optJSONObject("user");
+        if (user != null) {
+            JSONObject profile = new JSONObject();
+            for (String field : new String[]{"first_name", "last_name", "email"}) {
+                profile.put(field, displayField(user, field));
+            }
+            next.put("profile", profile);
+        } else if (!newLogin && session != null && session.optJSONObject("profile") != null) {
+            next.put("profile", session.getJSONObject("profile"));
+        }
         save("session", next); // Persist the replacement pair before making it available.
         session = next; loaded = true; status = text(R.string.phishark_ui_057); retryAfter = 0;
         if (newLogin) {
@@ -152,13 +190,13 @@ public final class BrowserAccount {
                 // identifiers or credentials in the UI or logs.
                 final String message;
                 if (error.status == 404 || error.status == 405) {
-                    message = text(R.string.phishark_ui_064) + error.status + text(R.string.phishark_ui_065);
+                    message = text(R.string.phishark_sign_in_unavailable);
                 } else if (error.status == 429) {
                     message = text(R.string.phishark_ui_066);
                 } else if (error.status >= 500) {
-                    message = text(R.string.phishark_ui_067) + error.status + text(R.string.phishark_ui_068);
+                    message = text(R.string.phishark_sign_in_unavailable);
                 } else {
-                    message = text(R.string.phishark_ui_069) + error.status + text(R.string.phishark_ui_070);
+                    message = text(R.string.phishark_sign_in_failed);
                 }
                 MAIN.post(() -> result.accept(message));
             } catch (java.net.SocketTimeoutException ignored) {

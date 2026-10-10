@@ -1,5 +1,21 @@
 # PhiShark Browser — Mac üzerinde ilk açılış, hesapla giriş ve marka
 
+**10 Ekim hesap UI güncellemesi:** Kullanıcı ekranında preflight/deep, skor,
+istek/cache/tekrar sayıları, HTTP kodu veya HTML/PNG ölçümleri göstermeyin.
+Menü ve Ayarlar'daki “PhiShark account” aynı native hesap ekranını açsın; ad,
+soyad/e-posta ve tek “Sign out” eylemi olsun. Bunlar mevcut token/refresh
+yanıtındaki `data.user.first_name`, `last_name`, `email` alanlarından geliyor;
+yeni backend yolu veya dashboard yetkisi gerekmiyor. Keychain oturumunda yalnız
+bu üç profil alanını seçerek saklayın; fatura, doğum tarihi ve diğer user
+alanlarını taşımayın. Eski profil içermeyen oturum mevcut refresh ile
+tamamlanabilir; mevcut tokenı başarılı saklamadan önce silmeyin. Eksik alanlarda
+profil/plan uydurmayın. Çıkışta profil, token, pending PKCE ve onayı temizleyin.
+Normal gezinmenin durumu sakin kalsın; daha önce istenen küçük gösterge yalnız
+deep HTTP sürerken görünsün. İlk girişte ayrıntılı veri gönderim onayını koruyun,
+hesap ekranını her açışta yeniden onay istemeyin. Android referansı ve native
+test kapsamı: [hesap UI raporu](../docs/android-account-ui.md). Bu metin iOS
+uygulamasının tamamlandığına dair kanıt değildir.
+
 9 Ekim 2026. Bu görev mevcut iOS tarayıcı entegrasyonunun devamıdır. Yeni
 tarayıcı veya yeni hesap sistemi kurmayın; mevcut PhiShark hesabını eklentideki
 eşleştirme mantığıyla bağlayın. Manuel API anahtarı ilk kurulum ekranı değildir.
