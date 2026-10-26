@@ -1,0 +1,5 @@
+# SPDX-License-Identifier: GPL-3.0-only
+declare_args() {
+  # Only synthetic 127.0.0.1 fixtures; never enable in a release artifact.
+  phishark_allow_loopback_testing = false
+}

@@ -1,0 +1,148 @@
+{
+  "files": {
+    "chrome/android/BUILD.gn": {
+      "appliedSha256": "8253c6c5a83a2a748534f0869335f8a1ed2c4f42c40d5f3d32d6fa1660203f81",
+      "originalSha256": "fba53d11d2fc1888df0afd78018adffda74e15072d3afea00ca44b8f2a860916"
+    },
+    "components/ntp_tiles/resources/default_popular_sites.json": {
+      "appliedSha256": "44bca0d9cfb2d9fc42e5f7c4be48481b090d9d3d32b132c1bce2db70046e5176",
+      "originalSha256": "ed349373eaa0598ac891d56b1c51d7eeabaf71e40ba20b66026c743c38fede70"
+    },
+    "chrome/browser/BUILD.gn": {
+      "appliedSha256": "4c0c85254594ffbb5758a564005e89f481fd922e662c09704aa1145062126ffa",
+      "originalSha256": "a5e12e5b88c08bce6091c72b73f76af319c10632be105238a2f294fda2922d27"
+    },
+    "chrome/browser/chrome_content_browser_client_navigation_throttles.cc": {
+      "appliedSha256": "e0e38cba89ca9d72d99b6b52512d3d63a9fee05850fc724b155c3a76a96a99a3",
+      "originalSha256": "db2050577d77f59439c4891c3b96303ef116f4fa314adb407704b1ad13dc7a3d"
+    },
+    "chrome/browser/ui/tab_helpers.cc": {
+      "appliedSha256": "d3184665d8410206d91939446f63b315ac3411890c7c2becefcfad86a1417b05",
+      "originalSha256": "d20d5025adce2576586be9c22dba4e4ff10832b3b3d150393f10d091e26689bb"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/app/ChromeActivity.java": {
+      "appliedSha256": "2741edbd7991f7475599bd671851844f783ba6ed5f9d1556173a1950ee117f27",
+      "originalSha256": "09c3fda17bb51980ce4394b22272516f508f26040b054ae8ff8776090d6913d6"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java": {
+      "appliedSha256": "e9fcbc674df396ab0c1c56b53833796fb09b19866979cb8ab13103c337f6e397",
+      "originalSha256": "f1f31a08a5956da0a6a465440794cd7b22c1fdf2158a53b3f7f364385143f861"
+    },
+    "chrome/android/java/res/xml/main_preferences.xml": {
+      "appliedSha256": "fe96a9ef190837a413bf0396e7b66237a7775af3a4f28bd8fa0edd8973dbaba4",
+      "originalSha256": "1d206d221685bd85737599c5dee7d24ef991f64caaec20cce333917d60a251a8"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java": {
+      "appliedSha256": "2943f00c020d9236d60fcd10b240dc3ec58d2176d6f0f1b369dc69af6c77a1d3",
+      "originalSha256": "dc8c5a85ecac59e6dead90003c777944134eb831411873639d55c723692e9e6d"
+    },
+    "chrome/android/java/AndroidManifest.xml": {
+      "appliedSha256": "86ed7081e246d2e6b03cd65628609dccfafee4c493985709bd0db3592d0e9099",
+      "originalSha256": "a5a9b04a5b648cb9c9e2dffc498b78306e70e626e85113771b1314b192c086a8"
+    },
+    "tools/grit/grit/grd_reader.py": {
+      "appliedSha256": "2761b14bdee6b6b26d12a099980d6fe3091e3e44c296d2f5fe2e494e596d727c",
+      "originalSha256": "b311e9fb69aaafab71615435e05ddda83f794279fc1ab0321352842693d914ca"
+    },
+    "services/firewall/tools/annotations.xml": {
+      "appliedSha256": "f56c4c6f7141ac570c250f509eb0c897cdcf3521dc70b7cbedda158be47214c1",
+      "originalSha256": "54468a846b830a7e875d66bf402997537891f07e7006e09e7a1ea2c734cf76f2"
+    },
+    "services/firewall/tools/rules.xml": {
+      "appliedSha256": "a75e18edf7b77b4a31b15742507c8691f0718c414b85be85baf16e427279a99d",
+      "originalSha256": "636c6a3200925806e6797a9925c5a7ae36334bc36b6ad4cb9d763803a0a24e16"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/firstrun/ToSAndUMAFirstRunFragment.java": {
+      "appliedSha256": "6ee64202b173725217292ac99e8f602ff220a82eaf5cec1dc7c60e5396c934ef",
+      "originalSha256": "16f87b4a0e93898a94745d858e86fbc41885f81f81ed9916d944e78f23b46c71"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/omaha/CromiteUpdateStatusProvider.java": {
+      "appliedSha256": "ce9c069aa3b664e6a4315bb7f0f31985b0b24e79f644d16940670496362dddb1",
+      "originalSha256": "d46b9106fb548546f8da4659eef05d725f7d51fca751dd5becbba44e80c76b5c"
+    },
+    "chrome/android/java/res_base/drawable/ic_launcher.xml": {
+      "appliedSha256": "102aef4c63a3d603f1857fe255274e556aa9bfbb18d564f1d393f3f3ec3b30ea",
+      "originalSha256": "f817d44b43a7798b93829d8c81e72482484886997ef03ca9f11bfc88e3c0aec7"
+    },
+    "chrome/android/java/res_base/drawable/ic_launcher_round.xml": {
+      "appliedSha256": "437bb460698dcadc7e8e96fe9f44a1a74bbef61ad2a7873366a760f9a647750e",
+      "originalSha256": "c059dc4d529f084b91dfffdf09c19ba62cbe61c91a1d01b17bda3d6d2d80e936"
+    },
+    "chrome/android/java/res_base/drawable/phishark_icon.xml": {
+      "appliedSha256": "816477ffa21eec3d900ec23953e8723708a3101a4391f5d5f6985f743493591a",
+      "originalSha256": null
+    },
+    "chrome/android/java/res_base/drawable-nodpi/phishark_mark.png": {
+      "appliedSha256": "70476feeb8212ea89dbe501011feb15ddd399494afb68fb72e6de24620eafd98",
+      "originalSha256": null
+    },
+    "chrome/android/java/res_base/drawable-nodpi/phishark_wordmark.png": {
+      "appliedSha256": "ad067f8ec8c94e074704a96dd92c4e207b1cbb3c9d86c2323e275a57692a33e6",
+      "originalSha256": null
+    },
+    "chrome/android/java/res_base/values/phishark.xml": {
+      "appliedSha256": "4f06096d4bb8a30a5e455a740b053ca7dffdca6e7cfc9be2c2d5db8aff53517d",
+      "originalSha256": null
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/phishark/BrowserAccount.java": {
+      "appliedSha256": "8ca57583808e7a5b191453ab7ded363d2cabadc9e00e420cc83df93d3cf651a5",
+      "originalSha256": null
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/phishark/BrowserAccountActivity.java": {
+      "appliedSha256": "dbe37368eb39c5691b614cc28cddde88394fcb9c96b3e58cd812e1d063b66fc3",
+      "originalSha256": null
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/phishark/PhiSharkAccountSettingsActivity.java": {
+      "appliedSha256": "9ed8e2c6e047e8088b556c30b1db52c84351e683167115370724644ddd0a67df",
+      "originalSha256": null
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/phishark/PhiSharkBridge.java": {
+      "appliedSha256": "09a7cefd2f55bd9b8d05272d11c119c929e6cdb8391a77f582485ffc382b1cf6",
+      "originalSha256": null
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/phishark/PhiSharkUpdateController.java": {
+      "appliedSha256": "9aa0104cfed44f48939792b7f075a5788e2e66359b29d0c4fc0bab752234a493",
+      "originalSha256": null
+    },
+    "chrome/browser/phishark/features.gni": {
+      "appliedSha256": "c93c4419b99c8355744b187f54558d02098c1286ee3a0ff33ca4aedfbbedad77",
+      "originalSha256": null
+    },
+    "chrome/browser/phishark/masked_screenshot.cc": {
+      "appliedSha256": "47693c77284635b3ac3c56788f6cca2df2d251ccf164d283b89093253bee302a",
+      "originalSha256": null
+    },
+    "chrome/browser/phishark/masked_screenshot.h": {
+      "appliedSha256": "06b2c011d4f4acb5e4fb73cbd166792c21febbdd7ca3d09a771dc301d75726cb",
+      "originalSha256": null
+    },
+    "chrome/browser/phishark/navigation_throttle.cc": {
+      "appliedSha256": "f770905b9aed2efccfe816723c75eda8ef3531248ccb36251f6bf021862b912a",
+      "originalSha256": null
+    },
+    "chrome/browser/phishark/navigation_throttle.h": {
+      "appliedSha256": "6154805f43493da5fc6f18d706323762f6e36fee37d7bc693a2a6f33ed961a79",
+      "originalSha256": null
+    },
+    "tools/grit/grit/phishark_brand.py": {
+      "appliedSha256": "069f9cc3030d47d387e41dbe5794774950c1d7898fdd530af330bc2151c23ba7",
+      "originalSha256": null
+    },
+    "chrome/android/java/src/io/phishark/browser/security/ApiKeyVault.java": {
+      "appliedSha256": "894cb7da4708511b7dc5d2bfabced4710ff601911b133a461d8c37259c7a6494",
+      "originalSha256": null
+    },
+    "chrome/android/java/src/io/phishark/browser/security/BrowserOAuth.java": {
+      "appliedSha256": "c9045e0e757a32c8942a8a9d1d7fae432384e3df70d1bb8b4b2207ff3433fad9",
+      "originalSha256": null
+    },
+    "chrome/browser/phishark/verdict.h": {
+      "appliedSha256": "dc020c4c2d644313b7b1de4a954eab39173d45419151e7151775f282d27e5147",
+      "originalSha256": null
+    },
+    "chrome/browser/phishark/verdict.cc": {
+      "appliedSha256": "d37b7cbc7f2512f19c2dbc5437c201c128b51fae08599d0c01098726853a5463",
+      "originalSha256": null
+    }
+  }
+}

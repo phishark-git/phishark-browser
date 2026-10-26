@@ -1,0 +1,466 @@
+diff --git a/chrome/android/BUILD.gn b/chrome/android/BUILD.gn
+index 7de41a8d998ef8e95a4fc40255a5733cab28c123..3695b694c9f26c2986f7038b6492c69e53c47756 100644
+--- a/chrome/android/BUILD.gn
++++ b/chrome/android/BUILD.gn
+@@ -138,6 +138,10 @@ if (_is_default_toolchain) {
+   android_resources("chrome_base_module_resources") {
+     sources = [
+       "java/res_base/anim/no_anim.xml",
++      "java/res_base/drawable/phishark_icon.xml",
++      "java/res_base/drawable-nodpi/phishark_mark.png",
++      "java/res_base/drawable-nodpi/phishark_wordmark.png",
++      "java/res_base/values/phishark.xml",
+       "java/res_base/drawable/ic_launcher.xml",
+       "java/res_base/drawable/ic_launcher_round.xml",
+       "java/res_base/font/chrome_google_sans.xml",
+@@ -901,6 +905,15 @@ if (_is_default_toolchain) {
+ 
+     # From java_sources.gni.
+     sources = chrome_java_sources
++    sources += [
++      "java/src/org/chromium/chrome/browser/phishark/PhiSharkBridge.java",
++      "java/src/org/chromium/chrome/browser/phishark/PhiSharkUpdateController.java",
++      "java/src/io/phishark/browser/security/ApiKeyVault.java",
++      "java/src/io/phishark/browser/security/BrowserOAuth.java",
++      "java/src/org/chromium/chrome/browser/phishark/BrowserAccount.java",
++      "java/src/org/chromium/chrome/browser/phishark/PhiSharkAccountSettingsActivity.java",
++      "java/src/org/chromium/chrome/browser/phishark/BrowserAccountActivity.java",
++    ]
+ 
+     # Include sources from feed_java_sources.gni.
+     sources += feed_java_sources
+@@ -2991,7 +3004,9 @@ if (_is_default_toolchain) {
+   }
+ 
+   generate_jni("chrome_jni_headers") {
++    allow_private_called_by_natives = true
+     sources = [
++      "java/src/org/chromium/chrome/browser/phishark/PhiSharkBridge.java",
+       "../browser/share/android/java/src/org/chromium/chrome/browser/share/BitmapDownloadRequest.java",
+       "../browser/share/android/java/src/org/chromium/chrome/browser/share/link_to_text/LinkToTextBridge.java",
+       "../browser/share/android/java/src/org/chromium/chrome/browser/share/long_screenshots/bitmap_generation/LongScreenshotsTabService.java",
+diff --git a/chrome/android/java/AndroidManifest.xml b/chrome/android/java/AndroidManifest.xml
+index e43f410c2c750fe12f12e1a48e6b896e3acac83c..cc03d81a4e5ec194ebfaf2d8e5c165f6c4120297 100644
+--- a/chrome/android/java/AndroidManifest.xml
++++ b/chrome/android/java/AndroidManifest.xml
+@@ -187,6 +187,7 @@ by a child template that "extends" this file.
+         alternate mechanism.
+       -->
+       <queries>
++        <intent><action android:name="android.intent.action.VIEW"/><category android:name="android.intent.category.BROWSABLE"/><data android:scheme="https"/></intent>
+         {% if enable_vr == "true" %}
+           <package android:name="com.google.vr.vrcore" />
+         {% endif %}
+@@ -199,7 +200,7 @@ by a child template that "extends" this file.
+         android:gwpAsanMode="always"
+         android:icon="@drawable/ic_launcher"
+         android:roundIcon="@drawable/ic_launcher_round"
+-        android:label="Cromite"
++        android:label="PhiShark Browser"
+         android:memtagMode="async"
+         android:largeHeap="false"
+         android:manageSpaceActivity="@string/manage_space_activity"
+@@ -1274,6 +1275,14 @@ by a child template that "extends" this file.
+           </activity>
+         {% endif %}
+ 
++<activity android:name="org.chromium.chrome.browser.phishark.PhiSharkAccountSettingsActivity" android:exported="false" android:label="@string/phishark_account_title"/>
++<activity android:name="org.chromium.chrome.browser.phishark.BrowserAccountActivity" android:exported="true" android:excludeFromRecents="true">
++  <intent-filter><action android:name="android.intent.action.VIEW"/>
++    <category android:name="android.intent.category.DEFAULT"/>
++    <category android:name="android.intent.category.BROWSABLE"/>
++    <data android:scheme="io.phishark.browser"/>
++  </intent-filter>
++</activity>
+         {% block extra_application_definitions %}
+         {% endblock %}
+       {% endmacro %}
+diff --git a/chrome/android/java/res/xml/main_preferences.xml b/chrome/android/java/res/xml/main_preferences.xml
+index dbb9e5ae7f01c8488d366bcaf47788088a0d2e31..53d1518bff1820c368f22dc1738993f4b4d3d6ee 100644
+--- a/chrome/android/java/res/xml/main_preferences.xml
++++ b/chrome/android/java/res/xml/main_preferences.xml
+@@ -2,6 +2,11 @@
+ <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:app="http://schemas.android.com/apk/res-auto"
+     android:orderingFromXml="false">
++    <org.chromium.components.browser_ui.settings.ChromeBasePreference
++        android:key="phishark_account" android:order="1"
++        android:title="@string/phishark_protection_menu"
++        android:summary="@string/phishark_account_settings_summary"
++        android:icon="@drawable/phishark_icon" />
+     <org.chromium.chrome.browser.ui.settings_promo_card.SettingsPromoCardPreference
+         android:key="settings_promo_card"
+         android:order="0" />
+diff --git a/chrome/android/java/res_base/drawable/ic_launcher.xml b/chrome/android/java/res_base/drawable/ic_launcher.xml
+index e5a868e458b5e8d41cc085abf0c6d56ce32840b6..d3637800114be6238af1a2fbc09ce51ffa76ff41 100644
+--- a/chrome/android/java/res_base/drawable/ic_launcher.xml
++++ b/chrome/android/java/res_base/drawable/ic_launcher.xml
+@@ -7,6 +7,6 @@ found in the LICENSE file.
+ 
+ <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android" >
+     <background android:drawable="@android:color/white"/>
+-    <foreground android:drawable="@mipmap/layered_app_icon"/>
+-    <monochrome android:drawable="@drawable/themed_app_icon"/>
++    <foreground android:drawable="@drawable/phishark_icon"/>
++    <monochrome android:drawable="@drawable/phishark_mark"/>
+ </adaptive-icon>
+diff --git a/chrome/android/java/res_base/drawable/ic_launcher_round.xml b/chrome/android/java/res_base/drawable/ic_launcher_round.xml
+index 2159da0bd9866b1ec50956e932880842e74034cd..90faf5f33f69d5cde724aaa8567c6bb385762793 100644
+--- a/chrome/android/java/res_base/drawable/ic_launcher_round.xml
++++ b/chrome/android/java/res_base/drawable/ic_launcher_round.xml
+@@ -7,6 +7,6 @@ found in the LICENSE file.
+ 
+ <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android" >
+     <background android:drawable="@mipmap/layered_app_icon_background"/>
+-    <foreground android:drawable="@mipmap/layered_app_icon_foreground"/>
+-    <monochrome android:drawable="@drawable/themed_app_icon"/>
++    <foreground android:drawable="@drawable/phishark_icon"/>
++    <monochrome android:drawable="@drawable/phishark_mark"/>
+ </adaptive-icon>
+diff --git a/chrome/android/java/src/org/chromium/chrome/browser/app/ChromeActivity.java b/chrome/android/java/src/org/chromium/chrome/browser/app/ChromeActivity.java
+index f6cf68ecc0dea75322e53d25e32511911f88a89f..59605e645d72f18617e6d6b81cdb7347b20c02ee 100644
+--- a/chrome/android/java/src/org/chromium/chrome/browser/app/ChromeActivity.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/app/ChromeActivity.java
+@@ -2182,6 +2182,7 @@ public abstract class ChromeActivity extends AsyncInitializationActivity
+      * {@link WindowAndroid}.
+      */
+     protected void onDestroyInternal() {
++        org.chromium.chrome.browser.phishark.PhiSharkBridge.uninstall(this);
+         if (mAcceleratorManager != null) {
+             mAcceleratorManager.destroy();
+             mAcceleratorManager = null;
+@@ -2362,6 +2363,7 @@ public abstract class ChromeActivity extends AsyncInitializationActivity
+         PowerMonitor.create();
+ 
+         super.finishNativeInitialization();
++        org.chromium.chrome.browser.phishark.PhiSharkBridge.install(this, getActivityTabProvider());
+ 
+         ChildProcessLauncherHelper.setIgnoreMainFrameVisibilityForImportance();
+ 
+@@ -3011,6 +3013,11 @@ public abstract class ChromeActivity extends AsyncInitializationActivity
+         @BrowserProfileType
+         int type = Profile.getBrowserProfileTypeFromProfile(getCurrentTabModel().getProfile());
+ 
++        if (id == R.id.phishark_protection_id) {
++            org.chromium.chrome.browser.phishark.PhiSharkBridge.showPanel(this);
++            return true;
++        }
++
+         if (id == R.id.preferences_id) {
+             if (SettingsInTab.isEnabled()) {
+                 LoadUrlParams params =
+diff --git a/chrome/android/java/src/org/chromium/chrome/browser/firstrun/ToSAndUMAFirstRunFragment.java b/chrome/android/java/src/org/chromium/chrome/browser/firstrun/ToSAndUMAFirstRunFragment.java
+index a1abacea50e7d1319d0ef225f1eba097e8486589..c85cecf969bb0930e02e43be3aac4a1bd90a6246 100644
+--- a/chrome/android/java/src/org/chromium/chrome/browser/firstrun/ToSAndUMAFirstRunFragment.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/firstrun/ToSAndUMAFirstRunFragment.java
+@@ -88,6 +88,9 @@ public class ToSAndUMAFirstRunFragment
+         super.onViewCreated(view, savedInstanceState);
+ 
+         mTitle = view.findViewById(R.id.title);
++        ((TextView) mTitle).setText("PhiShark Browser");
++        ((android.widget.ImageView) view.findViewById(R.id.image))
++                .setImageResource(R.drawable.phishark_icon);
+         mProgressSpinner = view.findViewById(R.id.progress_spinner);
+         mProgressSpinner.setVisibility(View.GONE);
+         mAcceptButton = (Button) view.findViewById(R.id.terms_accept);
+@@ -197,20 +200,21 @@ public class ToSAndUMAFirstRunFragment
+     private void updateTosText() {
+         List<SpanInfo> spans = new LinkedList<SpanInfo>();
+ 
+-        spans.add(buildPrivacyPolicyLink("1", R.string.privacy_link1));
++        spans.add(buildPrivacyPolicyLink("1", R.string.phishark_terms_url));
+ 
+-        spans.add(buildPrivacyPolicyLink("2", R.string.privacy_link2));
++        spans.add(buildPrivacyPolicyLink("2", R.string.phishark_privacy_url));
+ 
+-        spans.add(buildPrivacyPolicyLink("3", R.string.privacy_link3));
+ 
+-        spans.add(buildPrivacyPolicyLink("4", R.string.privacy_link4));
+ 
+-        String tosString = getString(R.string.bromite_fre_footer_privacy_policy);
++
++
++        String tosString = getString(R.string.phishark_welcome_body);
+ 
+         mTosAndPrivacy.setText(SpanApplier.applySpans(tosString, spans.toArray(new SpanInfo[0])));
+     }
+ 
+     private void updateReportCheckbox() {
++        mAutoUpdaterCheckBox.setVisibility(View.GONE);
+         mAutoUpdaterCheckBox.setChecked(false);
+     }
+ 
+@@ -295,7 +299,7 @@ public class ToSAndUMAFirstRunFragment
+ 
+         mAcceptButton.setVisibility(visibility);
+         mTosAndPrivacy.setVisibility(visibility);
+-        mAutoUpdaterCheckBox.setVisibility(visibility);
++        mAutoUpdaterCheckBox.setVisibility(View.GONE);
+     }
+ 
+     protected View getToSAndPrivacyText() {
+diff --git a/chrome/android/java/src/org/chromium/chrome/browser/omaha/CromiteUpdateStatusProvider.java b/chrome/android/java/src/org/chromium/chrome/browser/omaha/CromiteUpdateStatusProvider.java
+index 035ee64d866cf27fea5b74823a3737dd02f63ae9..67321016b89fbad6237a2922eb0756be81177f82 100644
+--- a/chrome/android/java/src/org/chromium/chrome/browser/omaha/CromiteUpdateStatusProvider.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/omaha/CromiteUpdateStatusProvider.java
+@@ -16,7 +16,7 @@ public class CromiteUpdateStatusProvider extends UpdateStatusProvider {
+     }
+ 
+     private CromiteUpdateStatusProvider() {
+-        super(new BromiteInlineUpdateController());
++        super(new org.chromium.chrome.browser.phishark.PhiSharkUpdateController());
+     }
+ 
+     /** @return Returns a singleton of {@link UpdateStatusProvider}. */
+diff --git a/chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java b/chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java
+index 8248dbc47a0e65e0e010517444da2403bcf30b30..f284d2dccdf2aea25fd2cfaa4e61dc692587870a 100644
+--- a/chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java
+@@ -355,6 +355,12 @@ public class MainSettings extends ChromeBaseSettingsFragment
+         mManagedPreferenceDelegate = createManagedPreferenceDelegate();
+ 
+         SettingsUtils.addPreferencesFromResource(this, R.xml.main_preferences);
++        Preference phisharkAccount = findPreference("phishark_account");
++        assumeNonNull(phisharkAccount).setOnPreferenceClickListener(preference -> {
++            Activity owner = requireActivity();
++            owner.startActivity(new Intent(owner, org.chromium.chrome.browser.phishark.PhiSharkAccountSettingsActivity.class));
++            return true;
++        });
+ 
+         IdentityManager identityManager =
+                 IdentityServicesProvider.get().getIdentityManager(getProfile());
+diff --git a/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java b/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java
+index 2bcb0ce8cab5e10698ef7ccf3ee16aa7abcc74a1..fa3a8587eed460ea18aeb3f06faad8b3d7bae485 100644
+--- a/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java
++++ b/chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java
+@@ -578,6 +578,7 @@ public class TabbedAppMenuPropertiesDelegate extends AppMenuPropertiesDelegateIm
+         AppMenuItemUtils.maybeAddDividerLine(modelList, R.id.divider_line_id);
+ 
+         // Settings
++        modelList.add(buildPhiSharkItem());
+         modelList.add(buildSettingsItem());
+ 
+         // NTP Customizations
+@@ -787,6 +788,7 @@ public class TabbedAppMenuPropertiesDelegate extends AppMenuPropertiesDelegateIm
+         AppMenuItemUtils.maybeAddDividerLine(modelList, R.id.divider_line_id);
+ 
+         // Settings
++        modelList.add(buildPhiSharkItem());
+         modelList.add(buildSettingsItem());
+ 
+         // Help
+@@ -872,6 +874,7 @@ public class TabbedAppMenuPropertiesDelegate extends AppMenuPropertiesDelegateIm
+                                         : 0,
+                                 isMenuIconAtStart())));
+         if (shouldShowQuickDeleteItem()) modelList.add(buildQuickDeleteItem());
++        modelList.add(buildPhiSharkItem());
+         modelList.add(buildSettingsItem());
+     }
+ 
+@@ -887,6 +890,7 @@ public class TabbedAppMenuPropertiesDelegate extends AppMenuPropertiesDelegateIm
+         } else {
+             modelList.add(buildNewIncognitoTabItem());
+         }
++        modelList.add(buildPhiSharkItem());
+         modelList.add(buildSettingsItem());
+         if (shouldShowQuickDeleteItem()) modelList.add(buildQuickDeleteItem());
+     }
+@@ -1500,6 +1504,15 @@ public class TabbedAppMenuPropertiesDelegate extends AppMenuPropertiesDelegateIm
+         return new ListItem(AppMenuHandler.AppMenuItemType.STANDARD, model);
+     }
+ 
++    private ListItem buildPhiSharkItem() {
++        return new ListItem(AppMenuHandler.AppMenuItemType.STANDARD,
++                AppMenuItemUtils.buildModelForStandardMenuItem(
++                        mContext, getAppMenuItemTheme(), R.id.phishark_protection_id,
++                        R.string.phishark_protection_menu,
++                        shouldShowIconBeforeItem() ? R.drawable.ic_account_circle_24dp : Resources.ID_NULL,
++                        isMenuIconAtStart()));
++    }
++
+     private ListItem buildSettingsItem() {
+         return new ListItem(
+                 AppMenuHandler.AppMenuItemType.STANDARD,
+diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
+index 0b5aeb5dd26244d50f6ff87b7b27a332989bc095..11a98249f064786b5c82d1d270eccd84049dcab9 100644
+--- a/chrome/browser/BUILD.gn
++++ b/chrome/browser/BUILD.gn
+@@ -1,3 +1,4 @@
++import("//chrome/browser/phishark/features.gni")
+ # Copyright 2014 The Chromium Authors
+ # Use of this source code is governed by a BSD-style license that can be
+ # found in the LICENSE file.
+@@ -897,6 +898,9 @@ source_set("core") {
+     "//build/config:precompiled_headers",
+   ]
+   defines = [ "ZLIB_CONST" ]
++  if (is_android) {
++    sources += [ "phishark/navigation_throttle.cc", "phishark/navigation_throttle.h", "phishark/masked_screenshot.cc", "phishark/masked_screenshot.h", "phishark/verdict.cc", "phishark/verdict.h" ]
++  }
+ 
+   if (is_chrome_branded || use_official_enterprise_connectors_api_keys) {
+     defines += [ "USE_OFFICIAL_ENTERPRISE_CONNECTORS_API_KEYS=1" ]
+@@ -908,6 +912,9 @@ source_set("core") {
+   ]
+ 
+   deps = [
++    ":phishark_buildflags",
++    "//crypto",
++    "//ui/gfx/codec",
+     ":active_use_util",
+     ":after_startup_task_utils",
+     ":bad_message",
+@@ -4829,3 +4836,8 @@ if (is_android) {
+     sources = [ "android/feedback/screenshot_mode.h" ]
+   }
+ }
++
++buildflag_header("phishark_buildflags") {
++  header = "phishark_buildflags.h"
++  flags = [ "PHISHARK_ALLOW_LOOPBACK_TESTING=$phishark_allow_loopback_testing" ]
++}
+diff --git a/chrome/browser/chrome_content_browser_client_navigation_throttles.cc b/chrome/browser/chrome_content_browser_client_navigation_throttles.cc
+index 8ddbade9e2832db492fc665e8782607c65bd9c8b..5d77a517fbc64b59aefcd5a8c752bbc19a77a020 100644
+--- a/chrome/browser/chrome_content_browser_client_navigation_throttles.cc
++++ b/chrome/browser/chrome_content_browser_client_navigation_throttles.cc
+@@ -82,6 +82,7 @@
+ #include "url/gurl.h"
+ 
+ #if BUILDFLAG(IS_ANDROID)
++#include "chrome/browser/phishark/navigation_throttle.h"
+ #include "chrome/android/features/dev_ui/buildflags.h"
+ #include "chrome/browser/signin/android/cross_device_signin_flow_navigation_throttle.h"
+ #include "components/navigation_interception/intercept_navigation_delegate.h"
+@@ -282,6 +283,9 @@ void MaybeCreateAndAddVisitedLinkNavigationThrottle(
+ 
+ void CreateAndAddChromeThrottlesForNavigation(
+     content::NavigationThrottleRegistry& registry) {
++#if BUILDFLAG(IS_ANDROID)
++  phishark::NavigationThrottle::MaybeCreateAndAdd(registry);
++#endif
+   content::NavigationHandle& handle = registry.GetNavigationHandle();
+   if (handle.IsInMainFrame()) {
+     // Appends the X-Geo header to the navigation request if needed.
+@@ -614,6 +618,9 @@ void CreateAndAddChromeThrottlesForNavigation(
+ 
+ void CreateAndAddChromeThrottlesForCommitWithoutUrlLoader(
+     content::NavigationThrottleRegistry& registry) {
++#if BUILDFLAG(IS_ANDROID)
++  phishark::NavigationThrottle::MaybeCreateAndAdd(registry);
++#endif
+   // PwcNavigationThrottle must also cancel off-allowlist main-frame
+   // navigations that commit without a URL loader (e.g. a subframe navigating
+   // the main frame to about:blank), which never reach WillStartRequest().
+diff --git a/chrome/browser/ui/tab_helpers.cc b/chrome/browser/ui/tab_helpers.cc
+index df95c3d95573a0f774209cd00c08befb871fcab6..36ab00439782cd0a21a3d3e4b226ca9457f96f67 100644
+--- a/chrome/browser/ui/tab_helpers.cc
++++ b/chrome/browser/ui/tab_helpers.cc
+@@ -171,6 +171,7 @@
+ #include "ui/accessibility/accessibility_features.h"
+ 
+ #if BUILDFLAG(IS_ANDROID)
++#include "chrome/browser/phishark/navigation_throttle.h"
+ #include "base/android/android_info.h"
+ #include "base/functional/bind.h"
+ #include "base/memory/ptr_util.h"
+@@ -325,6 +326,9 @@ std::optional<int64_t> GetPageContentAnnotationsTabId(
+ // https://chromium.googlesource.com/chromium/src/+/main/docs/chrome_browser_design_principles.md
+ void TabHelpers::AttachTabHelpers(WebContents* web_contents,
+                                   bool enable_browser_autofill) {
++#if BUILDFLAG(IS_ANDROID)
++  phishark::AttachTabProtection(web_contents);
++#endif
+   // If already adopted, nothing to be done.
+   base::SupportsUserData::Data* adoption_tag =
+       web_contents->GetUserData(&kTabContentsAttachedTabHelpersUserDataKey);
+diff --git a/components/ntp_tiles/resources/default_popular_sites.json b/components/ntp_tiles/resources/default_popular_sites.json
+index f193c1807f77f34a63caf92286b7ec31e14de9bf..713edad1bc815b79c1284745a137a51062d761d7 100644
+--- a/components/ntp_tiles/resources/default_popular_sites.json
++++ b/components/ntp_tiles/resources/default_popular_sites.json
+@@ -1,42 +1,10 @@
+ [
+-    {
+-        "large_icon_url": "https://www.chromium.org/_/rsrc/1484148948583/apple-touch-icon.png",
+-        "title": "The Chromium Projects `",
+-        "url": "https://www.chromium.org/"
+-    },
+-    {
+-        "favicon_url": "https://codereview.chromium.org/static/favicon.ico",
+-        "title": "Chromium Code Reviews",
+-        "url": "https://codereview.chromium.org/"
+-    },
+-    {
+-        "large_icon_url": "https://www.chromium.org/_/rsrc/1484148948583/apple-touch-icon.png",
+-        "title": "Git Repositories on chromium",
+-        "url": "https://chromium.googlesource.com/"
+-    },
+-    {
+-        "large_icon_url": "https://developers.google.com/_static/9bce7b6017/images/touch-icon.png",
+-        "title": "Google Open Source Programs Office",
+-        "url": "https://developers.google.com/open-source/"
+-    },
+-    {
+-        "large_icon_url": "https://freenode.net/static/img/logos/coloured-alphabg-sq-120.png",
+-        "title": "freenode",
+-        "url": "https://freenode.net/"
+-    },
+-    {
+-        "large_icon_url": "https://assets-cdn.github.com/pinned-octocat.svg",
+-        "title": "Github Page of the Chromium Project",
+-        "url": "https://github.com/chromium/"
+-    },
+-    {
+-        "large_icon_url": "https://cdn2.iconfinder.com/data/icons/minimalism/512/Chromium.png",
+-        "title": "Chrome Flags",
+-        "url": "chrome://flags"
+-    },
+-    {
+-        "large_icon_url": "https://cdn2.iconfinder.com/data/icons/minimalism/512/Chromium.png",
+-        "title": "Chrome Version",
+-        "url": "chrome://version/"
+-    }
++  {
++    "title": "PhiShark",
++    "url": "https://phishark.io/"
++  },
++  {
++    "title": "My PhiShark account",
++    "url": "https://app.phishark.io/"
++  }
+ ]
+diff --git a/services/firewall/tools/annotations.xml b/services/firewall/tools/annotations.xml
+index c34b796ef94a157daeedb3ebca4ec124be139b91..21e5ad7381399add7256378b3363d0fe99af75a5 100644
+--- a/services/firewall/tools/annotations.xml
++++ b/services/firewall/tools/annotations.xml
+@@ -500,4 +500,5 @@ TO PRODUCE:
+  <item id="blink_resource_loader_xslt" added_in_milestone="126" hash_code="35024334" content_hash_code="029ecdad" os_list="linux,windows,android" file_path="third_party/blink/renderer/platform/loader/fetch/fetch_utils.cc" />
+  <item id="blink_resource_loader_dictionary" added_in_milestone="126" hash_code="72296456" content_hash_code="04fa88f8" os_list="linux,windows,android" file_path="third_party/blink/renderer/platform/loader/fetch/fetch_utils.cc" />
+  <item id="blink_extension_resource_loader_embed" added_in_milestone="126" hash_code="95145213" content_hash_code="03788d28" os_list="linux,windows,android" file_path="third_party/blink/renderer/platform/loader/fetch/fetch_utils.cc" />
++ <item id="phishark_ephemeral_browser_analysis" hash_code="107570125" file_path="chrome/browser/phishark/navigation_throttle.cc" />
+ </annotations>
+diff --git a/services/firewall/tools/rules.xml b/services/firewall/tools/rules.xml
+index 033df730515a63c80a4815e4efc99aaf9a42d3d1..8ef53eb0249e6f16cbd83d133243fa402ff3bcf5 100644
+--- a/services/firewall/tools/rules.xml
++++ b/services/firewall/tools/rules.xml
+@@ -96,4 +96,6 @@
+ 
+  <!-- Component Updater-->
+  <item id="update_client" allowed="1"/>
++ <!-- User-configured ephemeral PhiShark URL/content analysis only. -->
++ <item id="phishark_ephemeral_browser_analysis" allowed="1"/>
+ </rules>
+diff --git a/tools/grit/grit/grd_reader.py b/tools/grit/grit/grd_reader.py
+index 46b1b31bc8f41689448d608f5a615e27fa20ef69..cbcb54eb4bf95646d74e9ebd8cec1405e1507c50 100755
+--- a/tools/grit/grit/grd_reader.py
++++ b/tools/grit/grit/grd_reader.py
+@@ -180,7 +180,9 @@ class GrdContentHandler(xml.sax.handler.ContentHandler):
+     # if "dontreplace" in content_orig:
+     #   raise exception.MissingElement("stop")
+     #   print(content + " <-- " + content_orig)
+-    return content
++    from grit.phishark_brand import brand_message
++    message_name = next((node.attrs.get("name", "") for node in reversed(self.stack) if node.name == "message"), "")
++    return brand_message(content_orig, content, message_name)
+ 
+ class GrdPartContentHandler(xml.sax.handler.ContentHandler):
+   def __init__(self, parent):

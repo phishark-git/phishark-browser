@@ -1,0 +1,186 @@
+{
+  "upstream_base": "b75a5a95ea1a1b55bdbfd6d9f42d47be7507fb8b",
+  "local_baseline_head": "2e10f8eeeeb270f60ce13a310dfe08499aa3a05a",
+  "files": {
+    "chrome/android/BUILD.gn": {
+      "sha256": "8253c6c5a83a2a748534f0869335f8a1ed2c4f42c40d5f3d32d6fa1660203f81",
+      "bytes": 173341,
+      "kind": "modified"
+    },
+    "chrome/android/java/AndroidManifest.xml": {
+      "sha256": "86ed7081e246d2e6b03cd65628609dccfafee4c493985709bd0db3592d0e9099",
+      "bytes": 77857,
+      "kind": "modified"
+    },
+    "chrome/android/java/res/xml/main_preferences.xml": {
+      "sha256": "fe96a9ef190837a413bf0396e7b66237a7775af3a4f28bd8fa0edd8973dbaba4",
+      "bytes": 7662,
+      "kind": "modified"
+    },
+    "chrome/android/java/res_base/drawable-nodpi/phishark_mark.png": {
+      "sha256": "70476feeb8212ea89dbe501011feb15ddd399494afb68fb72e6de24620eafd98",
+      "bytes": 1192404,
+      "kind": "untracked"
+    },
+    "chrome/android/java/res_base/drawable-nodpi/phishark_wordmark.png": {
+      "sha256": "ad067f8ec8c94e074704a96dd92c4e207b1cbb3c9d86c2323e275a57692a33e6",
+      "bytes": 77253,
+      "kind": "untracked"
+    },
+    "chrome/android/java/res_base/drawable/ic_launcher.xml": {
+      "sha256": "102aef4c63a3d603f1857fe255274e556aa9bfbb18d564f1d393f3f3ec3b30ea",
+      "bytes": 456,
+      "kind": "modified"
+    },
+    "chrome/android/java/res_base/drawable/ic_launcher_round.xml": {
+      "sha256": "437bb460698dcadc7e8e96fe9f44a1a74bbef61ad2a7873366a760f9a647750e",
+      "bytes": 471,
+      "kind": "modified"
+    },
+    "chrome/android/java/res_base/drawable/phishark_icon.xml": {
+      "sha256": "816477ffa21eec3d900ec23953e8723708a3101a4391f5d5f6985f743493591a",
+      "bytes": 483,
+      "kind": "untracked"
+    },
+    "chrome/android/java/res_base/values/phishark.xml": {
+      "sha256": "4f06096d4bb8a30a5e455a740b053ca7dffdca6e7cfc9be2c2d5db8aff53517d",
+      "bytes": 9063,
+      "kind": "untracked"
+    },
+    "chrome/android/java/src/io/phishark/browser/security/ApiKeyVault.java": {
+      "sha256": "894cb7da4708511b7dc5d2bfabced4710ff601911b133a461d8c37259c7a6494",
+      "bytes": 4415,
+      "kind": "untracked"
+    },
+    "chrome/android/java/src/io/phishark/browser/security/BrowserOAuth.java": {
+      "sha256": "c9045e0e757a32c8942a8a9d1d7fae432384e3df70d1bb8b4b2207ff3433fad9",
+      "bytes": 3218,
+      "kind": "untracked"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/app/ChromeActivity.java": {
+      "sha256": "2741edbd7991f7475599bd671851844f783ba6ed5f9d1556173a1950ee117f27",
+      "bytes": 166830,
+      "kind": "modified"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/firstrun/ToSAndUMAFirstRunFragment.java": {
+      "sha256": "6ee64202b173725217292ac99e8f602ff220a82eaf5cec1dc7c60e5396c934ef",
+      "bytes": 11718,
+      "kind": "modified"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/omaha/CromiteUpdateStatusProvider.java": {
+      "sha256": "ce9c069aa3b664e6a4315bb7f0f31985b0b24e79f644d16940670496362dddb1",
+      "bytes": 1491,
+      "kind": "modified"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/phishark/BrowserAccount.java": {
+      "sha256": "8ca57583808e7a5b191453ab7ded363d2cabadc9e00e420cc83df93d3cf651a5",
+      "bytes": 17721,
+      "kind": "untracked"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/phishark/BrowserAccountActivity.java": {
+      "sha256": "dbe37368eb39c5691b614cc28cddde88394fcb9c96b3e58cd812e1d063b66fc3",
+      "bytes": 1731,
+      "kind": "untracked"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/phishark/PhiSharkAccountSettingsActivity.java": {
+      "sha256": "9ed8e2c6e047e8088b556c30b1db52c84351e683167115370724644ddd0a67df",
+      "bytes": 7946,
+      "kind": "untracked"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/phishark/PhiSharkBridge.java": {
+      "sha256": "09a7cefd2f55bd9b8d05272d11c119c929e6cdb8391a77f582485ffc382b1cf6",
+      "bytes": 19918,
+      "kind": "untracked"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/phishark/PhiSharkUpdateController.java": {
+      "sha256": "9aa0104cfed44f48939792b7f075a5788e2e66359b29d0c4fc0bab752234a493",
+      "bytes": 921,
+      "kind": "untracked"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/settings/MainSettings.java": {
+      "sha256": "2943f00c020d9236d60fcd10b240dc3ec58d2176d6f0f1b369dc69af6c77a1d3",
+      "bytes": 46600,
+      "kind": "modified"
+    },
+    "chrome/android/java/src/org/chromium/chrome/browser/tabbed_mode/TabbedAppMenuPropertiesDelegate.java": {
+      "sha256": "e9fcbc674df396ab0c1c56b53833796fb09b19866979cb8ab13103c337f6e397",
+      "bytes": 81811,
+      "kind": "modified"
+    },
+    "chrome/browser/BUILD.gn": {
+      "sha256": "4c0c85254594ffbb5758a564005e89f481fd922e662c09704aa1145062126ffa",
+      "bytes": 179463,
+      "kind": "modified"
+    },
+    "chrome/browser/chrome_content_browser_client_navigation_throttles.cc": {
+      "sha256": "e0e38cba89ca9d72d99b6b52512d3d63a9fee05850fc724b155c3a76a96a99a3",
+      "bytes": 27396,
+      "kind": "modified"
+    },
+    "chrome/browser/phishark/features.gni": {
+      "sha256": "c93c4419b99c8355744b187f54558d02098c1286ee3a0ff33ca4aedfbbedad77",
+      "bytes": 176,
+      "kind": "untracked"
+    },
+    "chrome/browser/phishark/masked_screenshot.cc": {
+      "sha256": "47693c77284635b3ac3c56788f6cca2df2d251ccf164d283b89093253bee302a",
+      "bytes": 18592,
+      "kind": "untracked"
+    },
+    "chrome/browser/phishark/masked_screenshot.h": {
+      "sha256": "06b2c011d4f4acb5e4fb73cbd166792c21febbdd7ca3d09a771dc301d75726cb",
+      "bytes": 2592,
+      "kind": "untracked"
+    },
+    "chrome/browser/phishark/navigation_throttle.cc": {
+      "sha256": "f770905b9aed2efccfe816723c75eda8ef3531248ccb36251f6bf021862b912a",
+      "bytes": 36686,
+      "kind": "untracked"
+    },
+    "chrome/browser/phishark/navigation_throttle.h": {
+      "sha256": "6154805f43493da5fc6f18d706323762f6e36fee37d7bc693a2a6f33ed961a79",
+      "bytes": 1101,
+      "kind": "untracked"
+    },
+    "chrome/browser/phishark/verdict.cc": {
+      "sha256": "d37b7cbc7f2512f19c2dbc5437c201c128b51fae08599d0c01098726853a5463",
+      "bytes": 198,
+      "kind": "untracked"
+    },
+    "chrome/browser/phishark/verdict.h": {
+      "sha256": "dc020c4c2d644313b7b1de4a954eab39173d45419151e7151775f282d27e5147",
+      "bytes": 5417,
+      "kind": "untracked"
+    },
+    "chrome/browser/ui/tab_helpers.cc": {
+      "sha256": "d3184665d8410206d91939446f63b315ac3411890c7c2becefcfad86a1417b05",
+      "bytes": 43299,
+      "kind": "modified"
+    },
+    "components/ntp_tiles/resources/default_popular_sites.json": {
+      "sha256": "44bca0d9cfb2d9fc42e5f7c4be48481b090d9d3d32b132c1bce2db70046e5176",
+      "bytes": 154,
+      "kind": "modified"
+    },
+    "services/firewall/tools/annotations.xml": {
+      "sha256": "f56c4c6f7141ac570c250f509eb0c897cdcf3521dc70b7cbedda158be47214c1",
+      "bytes": 108978,
+      "kind": "modified"
+    },
+    "services/firewall/tools/rules.xml": {
+      "sha256": "a75e18edf7b77b4a31b15742507c8691f0718c414b85be85baf16e427279a99d",
+      "bytes": 3807,
+      "kind": "modified"
+    },
+    "tools/grit/grit/grd_reader.py": {
+      "sha256": "2761b14bdee6b6b26d12a099980d6fe3091e3e44c296d2f5fe2e494e596d727c",
+      "bytes": 11233,
+      "kind": "modified"
+    },
+    "tools/grit/grit/phishark_brand.py": {
+      "sha256": "069f9cc3030d47d387e41dbe5794774950c1d7898fdd530af330bc2151c23ba7",
+      "bytes": 833,
+      "kind": "untracked"
+    }
+  }
+}

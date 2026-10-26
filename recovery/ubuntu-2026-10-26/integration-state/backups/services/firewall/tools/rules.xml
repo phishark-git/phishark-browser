@@ -1,0 +1,99 @@
+<?xml version="1.0"?>
+<!--
+    This file is part of Bromite.
+
+    Bromite is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Bromite is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Bromite. If not, see <https://www.gnu.org/licenses/>.
+-->
+
+<rules>
+ <!-- Allow autoupdates -->
+ <item id="bromite_inline_update_controller" allowed="1"/>
+ <item id="adblock_subscription_download" allowed="1"/>
+ <item id="filters_update" allowed="1"/>
+
+ <!-- started by the user -->
+ <item id="download_via_context_menu" allowed="1"/>
+ <item id="offline_pages_download_file" allowed="1"/>
+ <item id="download_web_contents_frame" allowed="1"/>
+ <item id="save_file_manager" allowed="1"/>
+ <item id="download_via_toolbar_menu" allowed="1"/>
+ <item id="download_manager_resume" allowed="1"/>
+ <item id="render_view_context_menu" allowed="1"/>
+ <item id="downloads_dom_handler" allowed="1"/>
+
+ <!-- Disallow temporarily controlling the revoked list,
+      suffers from possible privacy problems -->
+ <item id="certificate_verifier_url_loader" allowed="0"/>
+ <item id="certificate_verifier_url_request" allowed="0"/>
+
+ <!-- Allow all blink stuffs -->
+ <item id="worker_script_load" allowed="1"/>
+ <item id="service_worker_script_load" allowed="1"/>
+ <item id="service_worker_update_checker" allowed="1"/>
+
+ <item id="navigation_url_loader" allowed="1"/>
+ <item id="blink_resource_loader" allowed="1"/>
+ <item id="blink_resource_loader_workers" allowed="1"/>
+ <item id="blink_resource_loader_manifest" allowed="1"/>
+ <item id="blink_resource_loader_xslt" allowed="1"/>
+ <item id="renderer_initiated_download" allowed="1"/>
+
+ <item id="background_fetch_context" allowed="1"/>
+
+ <!-- Allow Service Worker Navigation Preload API -->
+ <item id="service_worker_navigation_preload" allowed="1"/>
+
+ <!-- Allow websockets -->
+ <item id="websocket_stream" allowed="1"/>
+
+ <!-- Allow audio/video worklet -->
+ <item id="blink_resource_loader_worklet" allowed="1"/>
+
+ <!-- But disallow this -->
+ <item id="blink_resource_loader_report" allowed="0"/>
+ <item id="blink_resource_loader_webbundle" allowed="0"/>
+ <item id="blink_resource_speculation_rules" allowed="0"/>
+ <item id="blink_resource_loader_webidentity" allowed="0"/>
+ <item id="blink_fetch_later_manager" allowed="0"/>
+
+ <!-- Allow websocket and webrtc, under user control -->
+ <item id="websocket_stream" allowed="1"/>
+ <item id="websocket_basic_stream" allowed="1"/>
+ <item id="webrtc_peer_connection" allowed="1"/>
+
+ <!-- No network connection, but local usb and bluetooh -->
+ <item id="android_web_socket" allowed="1"/>
+ <item id="bluetooth_socket" allowed="1"/>
+
+ <!-- Under user control -->
+ <item id="omnibox_suggest" allowed="1"/>
+ <item id="dns_transaction" allowed="1"/>
+ <item id="dns_over_https" allowed="1"/>
+
+ <!-- Extensions support -->
+ <item id="webstore_installer" allowed="1"/>
+ <item id="extension_manifest_fetcher" allowed="1"/>
+ <item id="extension_crx_fetcher" allowed="1"/>
+
+ <!-- For proxy -->
+ <item id="proxy_config_settings" allowed="1"/>
+ <item id="proxy_config_system" allowed="1"/>
+
+ <!-- Needed -->
+ <item id="open_search" allowed="1"/>
+ <item id="favicon_loader" allowed="1"/>
+
+ <!-- Component Updater-->
+ <item id="update_client" allowed="1"/>
+</rules>

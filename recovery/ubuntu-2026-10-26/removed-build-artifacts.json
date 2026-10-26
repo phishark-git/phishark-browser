@@ -1,0 +1,130 @@
+[
+  {
+    "path": "artifacts/phishark-arm64-pre-account/ChromePublic.aab",
+    "bytes": 140568690
+  },
+  {
+    "path": "artifacts/phishark-arm64-pre-account/ChromePublic.apk",
+    "bytes": 323778464
+  },
+  {
+    "path": "artifacts/phishark-x64-account-1456fe34/ChromePublic.aab",
+    "bytes": 151634753
+  },
+  {
+    "path": "artifacts/phishark-x64-account-1456fe34/ChromePublic.apk",
+    "bytes": 350382801
+  },
+  {
+    "path": "artifacts/phishark-x64-account-8308008b/ChromePublic.aab",
+    "bytes": 151634591
+  },
+  {
+    "path": "artifacts/phishark-x64-account-8308008b/ChromePublic.apk",
+    "bytes": 350383921
+  },
+  {
+    "path": "artifacts/phishark-x64-account-ad710424/ChromePublic.aab",
+    "bytes": 151634868
+  },
+  {
+    "path": "artifacts/phishark-x64-account-ad710424/ChromePublic.apk",
+    "bytes": 350383569
+  },
+  {
+    "path": "artifacts/phishark-x64-deep-only-12ffd871/ChromePublic.aab",
+    "bytes": 151640918
+  },
+  {
+    "path": "artifacts/phishark-x64-deep-only-12ffd871/ChromePublic.apk",
+    "bytes": 350417247
+  },
+  {
+    "path": "artifacts/phishark-x64-diagnostics-326ae22f/ChromePublic.aab",
+    "bytes": 151637072
+  },
+  {
+    "path": "artifacts/phishark-x64-diagnostics-326ae22f/ChromePublic.apk",
+    "bytes": 350382513
+  },
+  {
+    "path": "artifacts/phishark-x64-diagnostics-690de3c1/ChromePublic.aab",
+    "bytes": 151637566
+  },
+  {
+    "path": "artifacts/phishark-x64-diagnostics-690de3c1/ChromePublic.apk",
+    "bytes": 350382513
+  },
+  {
+    "path": "artifacts/phishark-x64-diagnostics-6f9f1da1/ChromePublic.aab",
+    "bytes": 151639203
+  },
+  {
+    "path": "artifacts/phishark-x64-diagnostics-6f9f1da1/ChromePublic.apk",
+    "bytes": 350382122
+  },
+  {
+    "path": "artifacts/phishark-x64-diagnostics-9c6cbe6d/ChromePublic.aab",
+    "bytes": 151641034
+  },
+  {
+    "path": "artifacts/phishark-x64-diagnostics-9c6cbe6d/ChromePublic.apk",
+    "bytes": 350416823
+  },
+  {
+    "path": "artifacts/phishark-x64-diagnostics-bd7885ee/ChromePublic.aab",
+    "bytes": 151639124
+  },
+  {
+    "path": "artifacts/phishark-x64-diagnostics-bd7885ee/ChromePublic.apk",
+    "bytes": 350383282
+  },
+  {
+    "path": "artifacts/phishark-x64-diagnostics-d1aebded/ChromePublic.aab",
+    "bytes": 151638544
+  },
+  {
+    "path": "artifacts/phishark-x64-diagnostics-d1aebded/ChromePublic.apk",
+    "bytes": 350381506
+  },
+  {
+    "path": "artifacts/phishark-x64-diagnostics-db582dbd/ChromePublic.aab",
+    "bytes": 151636816
+  },
+  {
+    "path": "artifacts/phishark-x64-diagnostics-db582dbd/ChromePublic.apk",
+    "bytes": 350382637
+  },
+  {
+    "path": "artifacts/phishark-x64-gatekeeper-1e47449b/ChromePublic.aab",
+    "bytes": 151640697
+  },
+  {
+    "path": "artifacts/phishark-x64-gatekeeper-1e47449b/ChromePublic.apk",
+    "bytes": 350416823
+  },
+  {
+    "path": "artifacts/unmodified-baseline/ChromePublic-universal.apk",
+    "bytes": 173911028
+  },
+  {
+    "path": "artifacts/unmodified-baseline/ChromePublic-universal.apks",
+    "bytes": 173911367
+  },
+  {
+    "path": "artifacts/unmodified-baseline/ChromePublic.aab",
+    "bytes": 140595443
+  },
+  {
+    "path": "artifacts/unmodified-baseline/ChromePublic.apk",
+    "bytes": 323810198
+  },
+  {
+    "path": "artifacts/unmodified-x64-baseline/ChromePublic.aab",
+    "bytes": 151488576
+  },
+  {
+    "path": "artifacts/unmodified-x64-baseline/ChromePublic.apk",
+    "bytes": 350060104
+  }
+]
